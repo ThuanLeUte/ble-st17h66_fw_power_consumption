@@ -1,9 +1,6 @@
-/**************************************************************************************************
-*******
-**************************************************************************************************/
 
 /**************************************************************************************************
-  Filename:       simpleBLEperipheral.h
+  Filename:       bleuart.h
   Revised:         
   Revision:        
 
@@ -16,50 +13,87 @@
 #ifndef SIMPLEBLEPERIPHERAL_H
 #define SIMPLEBLEPERIPHERAL_H
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
+#include "types.h" 
+#include "rf_phy_driver.h"
 /*********************************************************************
  * INCLUDES
  */
 
 /*********************************************************************
  * CONSTANTS
- */
+ */ 
+ 
+ 
 
+#define INVALID_CONNHANDLE                    0xFFFF
 
 // Simple BLE Peripheral Task Events
-#define SBP_START_DEVICE_EVT					0x0001
-#define SBP_RESET_ADV_EVT						0x0002
+// Simple BLE Peripheral Task Events
+#define BUP_OSAL_EVT_START_DEVICE                         0x0001
+#define BUP_OSAL_EVT_BLE_TIMER                            0x0002
+#define BUP_OSAL_EVT_ENTER_NOCONN                         0x0004
+#define BUP_OSAL_EVT_RESET_ADV                            0x0008
+
+#define BUP_OSAL_EVT_CCCD_UPDATE                          0x0010
+#define BUP_OSAL_EVT_UART_DATA_RX                         0x0020
+#define BUP_OSAL_EVT_NOTIFY_DATA                          0x0040
+#define BUP_OSAL_EVT_UARTRX_TIMER                         0x0080
+#define BUP_OSAL_EVT_UART_TX_COMPLETE                     0x0100
+#define BUP_OSAL_EVT_UART_TO_TIMER                        0x0200
+#define BUP_OSAL_EVT_RF433_KEY                            0x0400
+#define BUP_OSAL_EVT_AT                                   0x0800
+
+
+#define UART_TX_PIN					  P34
+#define UART_RX_PIN					  P2
+#define FLOW_CTRL_IO_HOST_WAKEUP      P15
+#define UART_INDICATE_LED             P14
 #define	SBP_DEALDATA							0x0004
-/*********************************************************************
- * MACROS
- */
-#define MAC_DATA_LEN							6
 
-extern	uint8	dev_mac_data[MAC_DATA_LEN];
-extern	uint8	simpleBLEPeripheral_TaskID;
-/*********************************************************************
- * FUNCTIONS
- */
 
-/*
- * Task Initialization for the BLE Application
- */
-extern void SimpleBLEPeripheral_Init( uint8 task_id );
+//#define FLOW_CTRL_IO_BLE_CONNECTION   P20 //indicate host 620x BLE connection status: 1: connected; 0: advertising
 
-/*
- * Task Event Processor for the BLE Application
- */
-extern uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events );
+
+#define io_lock(io) {hal_gpio_write(io, 1);hal_gpio_pull_set(io, STRONG_PULL_UP);}
+#define io_unlock(io) {hal_gpio_write(io, 0);hal_gpio_pull_set(io, PULL_DOWN);}
+
+#define FLOW_CTRL_UART_TX_LOCK()   // io_lock(FLOW_CTRL_IO_UART_TX)
+#define FLOW_CTRL_UART_TX_UNLOCK() // io_unlock(FLOW_CTRL_IO_UART_TX)
+
+#define FLOW_CTRL_BLE_TX_LOCK()    // io_lock(FLOW_CTRL_IO_BLE_TX)
+#define FLOW_CTRL_BLE_TX_UNLOCK()   //io_unlock(FLOW_CTRL_IO_BLE_TX)
+
+#define FLOW_CTRL_BLE_CONN()     //io_lock(FLOW_CTRL_IO_BLE_CONNECTION)
+#define FLOW_CTRL_BLE_DISCONN() // io_unlock(FLOW_CTRL_IO_BLE_CONNECTION)
+
+extern uint8 simpleBLEPeripheral_TaskID;   // Task ID for internal task/event processing
+extern uint16 gapConnHandle;
+
+
+void bleuart_Init( uint8 task_id );
+uint16 bleuart_ProcessEvent( uint8 task_id, uint16 events );
+void ble_adv_enable(bool enable);
+void ble_set_device_name(uint8 *data, uint8 len);
+
+
+extern uint8 Modify_BLEDevice_Data;
+extern uint8  advint;
+extern uint8 AT_bleuart_auto;
+extern uint8 AT_bleuart_sleep;
+extern uint8 AT_bleuart_txpower;
+
+extern uint8 AT_Tx_Power[8];
+extern uint8 at_tx_power;
+
+extern uint8*scanR;
+extern uint8*advertdata;
+extern uint8 Modify_Mac_Data;
+extern uint8 AT_cnt_advdata;
+extern uint16 gapConnHandle;
+
 
 /*********************************************************************
 *********************************************************************/
 
-#ifdef __cplusplus
-}
-#endif
-
 #endif /* SIMPLEBLEPERIPHERAL_H */
+

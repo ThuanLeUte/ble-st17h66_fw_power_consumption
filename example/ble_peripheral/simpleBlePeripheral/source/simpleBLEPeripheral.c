@@ -1,353 +1,334 @@
-/**************************************************************************************************
-*******
-**************************************************************************************************/
 
 /**************************************************************************************************
-  Filename:       simpleBLEPeripheral.c
+  Filename:       bleuart.c
   Revised:        
   Revision:       
 
-  Description:    This file contains the Simple BLE Peripheral sample application
+  Description:    This file contains the ble uart rawpass application
                   
 
 **************************************************************************************************/
-/*********************************************************************
- * INCLUDES
- */
+
+#include "types.h"
 #include "bcomdef.h"
 #include "rf_phy_driver.h"
-#include "global_config.h"
 #include "OSAL.h"
 #include "OSAL_PwrMgr.h"
 #include "gatt.h"
 #include "hci.h"
+
 #include "gapgattserver.h"
 #include "gattservapp.h"
 #include "devinfoservice.h"
-#include "sbpProfile_ota.h"
-#include "ota_app_service.h"
+
 #include "peripheral.h"
 #include "gapbondmgr.h"
-#include "pwrmgr.h"
-#include "gpio.h"
-#include "simpleBLEPeripheral.h"
-#include "ll.h"
-#include "ll_hw_drv.h"
-#include "ll_def.h"
-#include "hci_tl.h"
+
+#include "simpleBLePeripheral.h"
+#include "log.h"
+#include "osal_snv.h"
 #include "flash.h"
+#include "ota_app_service.h"
+#include "bsp.h"
+#include "ble_misc_services.h"
+#include "ble_dvs_services.h"
+#include "sys.h"
+#include "damos_ram.h"
+#include "battservice.h"
+
 /*********************************************************************
  * MACROS
  */
-//#define LOG(...)  
+
 /*********************************************************************
- * CONSTANTS
  */
 
 // How often to perform periodic event
-#define SBP_PERIODIC_EVT_PERIOD					5000
+#define BUP_PERIODIC_EVT_PERIOD 5000
 
-#define DEVINFO_SYSTEM_ID_LEN					8
-#define DEVINFO_SYSTEM_ID						0
- 
-#define DEFAULT_DISCOVERABLE_MODE				GAP_ADTYPE_FLAGS_GENERAL
+#define DEVINFO_SYSTEM_ID_LEN 8
+#define DEVINFO_SYSTEM_ID 0
+
+#define DEFAULT_DISCOVERABLE_MODE GAP_ADTYPE_FLAGS_GENERAL
+
 // Minimum connection interval (units of 1.25ms, 80=100ms) if automatic parameter update request is enabled
-#define DEFAULT_DESIRED_MIN_CONN_INTERVAL		8//120//32//80
+#define DEFAULT_DESIRED_MIN_CONN_INTERVAL 8
+
 // Maximum connection interval (units of 1.25ms, 800=1000ms) if automatic parameter update request is enabled
-#define DEFAULT_DESIRED_MAX_CONN_INTERVAL		10//160//48//800
+#define DEFAULT_DESIRED_MAX_CONN_INTERVAL 10
+
 // Slave latency to use if automatic parameter update request is enabled
-#define DEFAULT_DESIRED_SLAVE_LATENCY			0
+#define DEFAULT_DESIRED_SLAVE_LATENCY 0
+
 // Supervision timeout value (units of 10ms, 1000=10s) if automatic parameter update request is enabled
-#define DEFAULT_DESIRED_CONN_TIMEOUT			600//1000
+#define DEFAULT_DESIRED_CONN_TIMEOUT 600
+
 // Whether to enable automatic parameter update request when a connection is formed
-#define DEFAULT_ENABLE_UPDATE_REQUEST			TRUE
+#define DEFAULT_ENABLE_UPDATE_REQUEST TRUE
+
 // Connection Pause Peripheral time value (in seconds)
-#define DEFAULT_CONN_PAUSE_PERIPHERAL			6
-#define INVALID_CONNHANDLE						0xFFFF
-// Default passcode
-#define DEFAULT_PASSCODE						0//19655
+#define DEFAULT_CONN_PAUSE_PERIPHERAL 6
+
 // Length of bd addr as a string
-#define B_ADDR_STR_LEN							15
-#define RESOLVING_LIST_ENTRY_NUM				10
-// Offset of advertData&scanRspData
-#define	RSP_OFFSET_MAC							4
+#define B_ADDR_STR_LEN 15
 
-/*********************************************************************
- * build define
- */
+// Default passcode
+#define DEFAULT_PASSCODE 0
 
-/*********************************************************************
- * TYPEDEFS
- */
+// Default GAP pairing mode
+#define DEFAULT_PAIRING_MODE GAPBOND_PAIRING_MODE_WAIT_FOR_REQ
 
-/*********************************************************************
- * GLOBAL VARIABLES
- */
-perStatsByChan_t g_perStatsByChanTest;
+// Default MITM mode (TRUE to require passcode or OOB when pairing)
+#define DEFAULT_MITM_MODE TRUE
 
-/*********************************************************************
- * EXTERNAL VARIABLES
- */
-volatile uint8_t g_current_advType = LL_ADV_CONNECTABLE_UNDIRECTED_EVT;
+// Default bonding mode, TRUE to bond
+#define DEFAULT_BONDING_MODE TRUE
 
+// Default GAP bonding I/O capabilities
+#define DEFAULT_IO_CAPABILITIES GAPBOND_IO_CAP_NO_INPUT_NO_OUTPUT
 
-/*********************************************************************
- * EXTERNAL FUNCTIONS
- */
+uint8 Modify_BLEDevice_Data = 0;
 
+uint16 advInt[6] = {80, 160, 320, 800, 1600, 3200};
+uint8 advint = 2;
 
-/*********************************************************************
- * LOCAL VARIABLES
- */
-uint8	simpleBLEPeripheral_TaskID;   // Task ID for internal task/event processing
+uint8 AT_bleuart_auto = 0x59;
+uint8 AT_bleuart_sleep = 0;
 
-static	gaprole_States_t	gapProfileState	=	GAPROLE_INIT;
+uint8 AT_Tx_Power[8] = {0x1f, 0x1d, 0x17, 0x15, 0x0d, 0x0a, 0x06, 0x03};
+uint8 AT_bleuart_txpower = 4;
 
+uint8 AT_cnt_advdata = 9;
 
-uint8	dev_mac_data[MAC_DATA_LEN]	=	{0x00,0x00,0x00,0x00,0x00,0x00};
+uint8 simpleBLEPeripheral_TaskID; // Task ID for internal task/event processing
+
+uint16 gapConnHandle;
+
+static gaprole_States_t gapProfileState = GAPROLE_INIT;
+
 // GAP - SCAN RSP data (max size = 31 bytes)
 static uint8 scanRspData[] =
 {
-	 // complete name
-    0x11,   // length of this data
-    GAP_ADTYPE_LOCAL_NAME_COMPLETE,
-    'S',   // 'F'
-    'i',   // 'F'
-    'm',   // 'F'
-    'p',   // 'F'
-    'l',   // 'F'
-    'e',   // 'F'
-    'P',   // 'F'
-	'e',	// 'F'
-	'r',	// 'F'
-    'i',   // 'F'
-    'p',   // 'F'
-    'h',   // 'F'
-    'e',   // 'F'
-    'r',   // 'F'
-    'a',   // 'F'
-    'l',   // 'F'
-  
-
-    // connection interval range
-    0x05,   // length of this data
-    GAP_ADTYPE_SLAVE_CONN_INTERVAL_RANGE,
-    LO_UINT16( DEFAULT_DESIRED_MIN_CONN_INTERVAL ),   // 100ms
-    HI_UINT16( DEFAULT_DESIRED_MIN_CONN_INTERVAL ),
-    LO_UINT16( DEFAULT_DESIRED_MAX_CONN_INTERVAL ),   // 1s
-    HI_UINT16( DEFAULT_DESIRED_MAX_CONN_INTERVAL ),
-
-    // Tx power level
-    0x02,   // length of this data
-    GAP_ADTYPE_POWER_LEVEL,
-    0       // 0dBm
+        // complete name
+        21, // length of this data
+        GAP_ADTYPE_LOCAL_NAME_COMPLETE,
+        'D', 'I', 'S', 'P', ' ', ' ', ' ', ' ', ' ', ' ',
+        ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
 };
 
-// advert data for iBeacon
-static uint8 advertData[] =
-{	
-    0x02,   // length of this data
-    GAP_ADTYPE_FLAGS,
-    DEFAULT_DISCOVERABLE_MODE | GAP_ADTYPE_FLAGS_BREDR_NOT_SUPPORTED,
-    0x1A, // length of this data including the data type byte
-    GAP_ADTYPE_MANUFACTURER_SPECIFIC, // manufacturer specific adv data type
-    0x4c, // Company ID - Fixed
-    0x00, // Company ID - Fixed
-    0x02, // Data Type - Fixed
-    0x15, // Data Length - Fixed
-    0xFD, // UUID  
-    0xA5, // UUID 
-    0x06, // UUID
-    0x93, // UUID
-    0xA4, // UUID
-    0xE2, // UUID
-    0x4F, // UUID
-    0xB1, // UUID
-    0xAF, // UUID
-    0xCF, // UUID
-    0xC6, // UUID
-    0xEB, // UUID
-    0x07, // UUID
-    0x64, // UUID
-    0x78, // UUID
-    0x25, // UUID
-    0x27, // Major
-    0x74, // Major
-    0x6b,//0x04, // Minor
-    0xed,//0xb0, // Minor
-    0xc5 // Power - The 2's complement of the calibrated Tx Power
+static uint8 advert_data_case_1[] =
+{
+        0x02, // length of this data
+        GAP_ADTYPE_FLAGS,
+        DEFAULT_DISCOVERABLE_MODE | GAP_ADTYPE_FLAGS_BREDR_NOT_SUPPORTED,
+
+        0x09,
+        0xff,
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, //reserved data
+};
+
+static uint8 advert_data_case_2[] =
+{
+        0x02, // length of this data
+        GAP_ADTYPE_FLAGS,
+        DEFAULT_DISCOVERABLE_MODE | GAP_ADTYPE_FLAGS_BREDR_NOT_SUPPORTED,
+
+        0x03,
+        0x03, //Complete list of 16-bit UUIDs
+        0xf0, 0xff,
+
+        0x09,
+        0xff,
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, //reserved data
+};
+
+static uint8 advert_data_case_3[] =
+{
+        0x02, // length of this data
+        GAP_ADTYPE_FLAGS,
+        DEFAULT_DISCOVERABLE_MODE | GAP_ADTYPE_FLAGS_BREDR_NOT_SUPPORTED,
+
+        0x03,
+        0x03, //Complete list of 16-bit UUIDs
+        0xf3, 0xff,
+
+        0x09,
+        0xff,
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, //reserved data
 };
 
 // GAP GATT Attributes
-static uint8 attDeviceName[GAP_DEVICE_NAME_LEN] = "SimplePeripheral";
+static uint8 attDeviceName[GAP_DEVICE_NAME_LEN] = "DISP                ";
+
 /*********************************************************************
  * LOCAL FUNCTIONS
  */
-static void simpleBLEPeripheral_ProcessOSALMsg( osal_event_hdr_t *pMsg );
-static void peripheralStateNotificationCB( gaprole_States_t newState );
-static void simpleProfileChangeCB( uint8 paramID );
-static void peripheralStateReadRssiCB( int8 rssi  );
+static void bleuart_StateNotificationCB(gaprole_States_t newState);
+void ble_set_device_name(uint8 *data, uint8 len);
 
 /*********************************************************************
  * PROFILE CALLBACKS
  */
 
 // GAP Role Callbacks
-static gapRolesCBs_t simpleBLEPeripheral_PeripheralCBs =
-{
-    peripheralStateNotificationCB,  // Profile State Change Callbacks
-    peripheralStateReadRssiCB       // When a valid RSSI is read from controller (not used by application)
+static gapRolesCBs_t bleuart_PeripheralCBs =
+    {
+        bleuart_StateNotificationCB, // Profile State Change Callbacks
+        NULL                         // When a valid RSSI is read from controller (not used by application)
 };
-#if (DEF_GAPBOND_MGR_ENABLE==1)
-// GAP Bond Manager Callbacks, add 2017-11-15
-static gapBondCBs_t simpleBLEPeripheral_BondMgrCBs =
-{
-	NULL,                     // Passcode callback (not used by application)
-	NULL                      // Pairing / Bonding state Callback (not used by application)
-};
-#endif
-// Simple GATT Profile Callbacks
-static simpleProfileCBs_t simpleBLEPeripheral_SimpleProfileCBs =
-{
-    simpleProfileChangeCB    // Charactersitic value change callback
-};
+
+
 
 /*********************************************************************
  * PUBLIC FUNCTIONS
  */
 
-/*********************************************************************
- * @fn      SimpleBLEPeripheral_Init
- *
- * @brief   Initialization function for the Simple BLE Peripheral App Task.
- *          This is called during initialization and should contain
- *          any application specific initialization (ie. hardware
- *          initialization/setup, table initialization, power up
- *          notificaiton ... ).
- *
- * @param   task_id - the ID assigned by OSAL.  This ID should be
- *                    used to send messages and set timers.
- *
- * @return  none
- */
-void SimpleBLEPeripheral_Init( uint8 task_id )
+//void on_bleuartServiceEvt(bleuart_Evt_t *pev)
+//{
+//  LOG("on_bleuartServiceEvt:%d\n", pev->ev);
+//  switch (pev->ev)
+//  {
+//  case bleuart_EVT_TX_NOTI_DISABLED:
+//    break;
+//  case bleuart_EVT_TX_NOTI_ENABLED:
+//    osal_set_event(simpleBLEPeripheral_TaskID, BUP_OSAL_EVT_NOTIFY_DATA);
+//    break;
+//  case bleuart_EVT_BLE_DATA_RECIEVED:
+//    LOG("%s,%d\n", pev->data, pev->param);
+//    break;
+//  default:
+//    break;
+//  }
+//}
+
+void bleuart_Init(uint8 task_id)
 {
-    simpleBLEPeripheral_TaskID = task_id;
-//	uint8	i	=	0;
+  simpleBLEPeripheral_TaskID = task_id;
 
-    // Setup the GAP
-    VOID GAP_SetParamValue( TGAP_CONN_PAUSE_PERIPHERAL, DEFAULT_CONN_PAUSE_PERIPHERAL );
-  
-    // Setup the GAP Peripheral Role Profile
+  // System init
+  sys_init();
+
+  // Setup the GAP
+  VOID GAP_SetParamValue(TGAP_CONN_PAUSE_PERIPHERAL, DEFAULT_CONN_PAUSE_PERIPHERAL);
+
+  // Setup the GAP Peripheral Role Profile
+  {
+    // device starts advertising upon initialization
+    uint8 initial_advertising_enable = TRUE;
+
+    uint8 enable_update_request = DEFAULT_ENABLE_UPDATE_REQUEST;
+    uint8 advChnMap = GAP_ADVCHAN_37 | GAP_ADVCHAN_38 | GAP_ADVCHAN_39;
+
+    // By setting this to zero, the device will go into the waiting state after
+    // being discoverable for 30.72 second, and will not being advertising again
+    // until the enabler is set back to TRUE
+    uint16 gapRole_AdvertOffTime = 0;
+
+    uint16 desired_min_interval = DEFAULT_DESIRED_MIN_CONN_INTERVAL;
+    uint16 desired_max_interval = DEFAULT_DESIRED_MAX_CONN_INTERVAL;
+    uint16 desired_slave_latency = DEFAULT_DESIRED_SLAVE_LATENCY;
+    uint16 desired_conn_timeout = DEFAULT_DESIRED_CONN_TIMEOUT;
+
+    uint8 peerPublicAddr[] = {
+        0x01,
+        0x02,
+        0x03,
+        0x04,
+        0x05,
+        0x06};
+
+    /***************************************************************************************************************/
+    uint8 AT_mac_address[6];
+    hal_flash_read(0x4004, AT_mac_address, 2);
+    hal_flash_read(0x4000, AT_mac_address + 2, 4);
+
+    /***************************************************************************************************************/
+
+    GAPRole_SetParameter(GAPROLE_ADV_DIRECT_ADDR, sizeof(peerPublicAddr), peerPublicAddr);
+    // set adv channel map
+    GAPRole_SetParameter(GAPROLE_ADV_CHANNEL_MAP, sizeof(uint8), &advChnMap);
+
+    // Set the GAP Role Parameters
+    GAPRole_SetParameter(GAPROLE_ADVERT_ENABLED, sizeof(uint8), &initial_advertising_enable);
+    GAPRole_SetParameter(GAPROLE_ADVERT_OFF_TIME, sizeof(uint16), &gapRole_AdvertOffTime);
+
+    GAPRole_SetParameter(GAPROLE_SCAN_RSP_DATA, sizeof(scanRspData), scanRspData);
+
+    switch (g_dispenser.device_case)
     {
-        // device starts advertising upon initialization
-        uint8 initial_advertising_enable	=	FALSE;
-
-        uint8 enable_update_request			=	DEFAULT_ENABLE_UPDATE_REQUEST;
-        uint8 advChnMap						=	GAP_ADVCHAN_37 | GAP_ADVCHAN_38 | GAP_ADVCHAN_39; 
-        
-        // By setting this to zero, the device will go into the waiting state after
-        // being discoverable for 30.72 second, and will not being advertising again
-        // until the enabler is set back to TRUE
-        uint16 gapRole_AdvertOffTime	=	0;
+    case SYS_DEV_CASE_1:
+      GAPRole_SetParameter(GAPROLE_ADVERT_DATA, sizeof(advert_data_case_1), advert_data_case_1);
+      break;
     
-        uint16 desired_min_interval		=	DEFAULT_DESIRED_MIN_CONN_INTERVAL;
-        uint16 desired_max_interval		=	DEFAULT_DESIRED_MAX_CONN_INTERVAL;
-        uint16 desired_slave_latency	=	DEFAULT_DESIRED_SLAVE_LATENCY;
-        uint16 desired_conn_timeout		=	DEFAULT_DESIRED_CONN_TIMEOUT;
-		
-        uint8 peerPublicAddr[] = {
-			0x01,
-			0x02,
-			0x03,
-			0x04,
-			0x05,
-			0x06
-		};
+    case SYS_DEV_CASE_2:
+      GAPRole_SetParameter(GAPROLE_ADVERT_DATA, sizeof(advert_data_case_2), advert_data_case_2);
+      break;
 
-		{
-//			hal_flash_read(0x4004, dev_mac_data, 2);
-//			hal_flash_read(0x4000, dev_mac_data+2, 4);
-//			LOG("dev_mac_data: 0x");
-//			LOG_DUMP_BYTE(dev_mac_data, MAC_DATA_LEN);
-//			VOID osal_memcpy(scanRspData + RSP_OFFSET_MAC, dev_mac_data, MAC_DATA_LEN);
-		}
+    case SYS_DEV_CASE_3:
+      GAPRole_SetParameter(GAPROLE_ADVERT_DATA, sizeof(advert_data_case_3), advert_data_case_3);
+      break;
 
-        uint8 advType =g_current_advType;// LL_ADV_NONCONNECTABLE_UNDIRECTED_EVT;//LL_ADV_SCANNABLE_UNDIRECTED_EVT;//LL_ADV_CONNECTABLE_LDC_DIRECTED_EVT;//;    // it seems a  bug to set GAP_ADTYPE_ADV_NONCONN_IND = 0x03
-        GAPRole_SetParameter( GAPROLE_ADV_EVENT_TYPE,	sizeof( uint8 ),		&advType );
-		GAPRole_SetParameter( GAPROLE_ADV_DIRECT_ADDR,	sizeof(peerPublicAddr), peerPublicAddr);
-        // set adv channel map
-        GAPRole_SetParameter( GAPROLE_ADV_CHANNEL_MAP,	sizeof( uint8 ),		&advChnMap);        
-        // Set the GAP Role Parameters
-        GAPRole_SetParameter( GAPROLE_ADVERT_ENABLED,	sizeof( uint8 ),		&initial_advertising_enable );
-        GAPRole_SetParameter( GAPROLE_ADVERT_OFF_TIME,	sizeof( uint16 ),		&gapRole_AdvertOffTime 	);
-        GAPRole_SetParameter( GAPROLE_SCAN_RSP_DATA,	sizeof( scanRspData),	scanRspData	);
-        GAPRole_SetParameter( GAPROLE_ADVERT_DATA,		sizeof( advertData ),	advertData	);
-        GAPRole_SetParameter( GAPROLE_PARAM_UPDATE_ENABLE,	sizeof( uint8  ),	&enable_update_request	);
-        GAPRole_SetParameter( GAPROLE_MIN_CONN_INTERVAL,	sizeof( uint16 ),	&desired_min_interval	);
-        GAPRole_SetParameter( GAPROLE_MAX_CONN_INTERVAL,	sizeof( uint16 ),	&desired_max_interval	);
-        GAPRole_SetParameter( GAPROLE_SLAVE_LATENCY,		sizeof( uint16 ),	&desired_slave_latency	);
-        GAPRole_SetParameter( GAPROLE_TIMEOUT_MULTIPLIER,	sizeof( uint16 ),	&desired_conn_timeout	);
+    default:
+      break;
     }
 
-	// Set the GAP Characteristics
-	GGS_SetParameter( GGS_DEVICE_NAME_ATT, GAP_DEVICE_NAME_LEN, attDeviceName );
+    GAPRole_SetParameter(GAPROLE_PARAM_UPDATE_ENABLE, sizeof(uint8), &enable_update_request);
+    GAPRole_SetParameter(GAPROLE_MIN_CONN_INTERVAL, sizeof(uint16), &desired_min_interval);
+    GAPRole_SetParameter(GAPROLE_MAX_CONN_INTERVAL, sizeof(uint16), &desired_max_interval);
+    GAPRole_SetParameter(GAPROLE_SLAVE_LATENCY, sizeof(uint16), &desired_slave_latency);
+    GAPRole_SetParameter(GAPROLE_TIMEOUT_MULTIPLIER, sizeof(uint16), &desired_conn_timeout);
+  }
 
-    // Set advertising interval
-    {
-        uint16 advInt = 1600;//2400;//1600;//1600;//800;//1600;   // actual time = advInt * 625us
+  // Set the GAP Characteristics
+  osal_memcpy(attDeviceName, &scanRspData[2], 20);
+  GGS_SetParameter(GGS_DEVICE_NAME_ATT, GAP_DEVICE_NAME_LEN, attDeviceName);
 
-        GAP_SetParamValue( TGAP_LIM_DISC_ADV_INT_MIN, advInt );
-        GAP_SetParamValue( TGAP_LIM_DISC_ADV_INT_MAX, advInt );
-        GAP_SetParamValue( TGAP_GEN_DISC_ADV_INT_MIN, advInt );
-        GAP_SetParamValue( TGAP_GEN_DISC_ADV_INT_MAX, advInt );
-    }
-#if (DEF_GAPBOND_MGR_ENABLE==1)    
-    // Setup the GAP Bond Manager, add 2017-11-15
-    {
-		uint32 passkey = DEFAULT_PASSCODE;
-		uint8 pairMode = GAPBOND_PAIRING_MODE_WAIT_FOR_REQ;
-		uint8 mitm = TRUE;
-		uint8 ioCap = GAPBOND_IO_CAP_NO_INPUT_NO_OUTPUT;
-		uint8 bonding = TRUE;
-		GAPBondMgr_SetParameter( GAPBOND_DEFAULT_PASSCODE, sizeof ( uint32 ), &passkey );
-		GAPBondMgr_SetParameter( GAPBOND_PAIRING_MODE, sizeof ( uint8 ), &pairMode );
-		GAPBondMgr_SetParameter( GAPBOND_MITM_PROTECTION, sizeof ( uint8 ), &mitm );
-		GAPBondMgr_SetParameter( GAPBOND_IO_CAPABILITIES, sizeof ( uint8 ), &ioCap );
-		GAPBondMgr_SetParameter( GAPBOND_BONDING_ENABLED, sizeof ( uint8 ), &bonding );
-    }
-#endif    
-    // Initialize GATT attributes
-	GGS_AddService( GATT_ALL_SERVICES );            	// 	GAP
-	GATTServApp_AddService( GATT_ALL_SERVICES );    	// 	GATT attributes
-//	DevInfo_AddService();                           	// 	Device Information Service
-	SimpleProfile_AddService( GATT_ALL_SERVICES );  	// 	Simple GATT Profile
-//	uint8	OTA_Passward_AscII[8]	=	{'R','G','B','L','i','g','h','t'};
-//	ota_app_AddService_UseKey(8,OTA_Passward_AscII);
+  // Set advertising interval
+  {
+    GAP_SetParamValue(TGAP_LIM_DISC_ADV_INT_MIN, advInt[advint]);
+    GAP_SetParamValue(TGAP_LIM_DISC_ADV_INT_MAX, advInt[advint]);
+    GAP_SetParamValue(TGAP_GEN_DISC_ADV_INT_MIN, advInt[advint]);
+    GAP_SetParamValue(TGAP_GEN_DISC_ADV_INT_MAX, advInt[advint]);
+  }
 
+  // Initialize GATT attributes
+  GGS_AddService(GATT_ALL_SERVICES);         // GAP
+  GATTServApp_AddService(GATT_ALL_SERVICES); // GATT attributes
+  DevInfo_AddService();                      // Device Information Service
 
-    #if (0)
-    {
-		uint8_t mtuSet = 247;
-		llInitFeatureSet2MPHY(TRUE);
-		llInitFeatureSetDLE(TRUE);
-		ATT_SetMTUSizeMax(mtuSet);
-//		LOG("[2Mbps | DLE | MTU %d] \n",mtuSet);
-    }
-    #else
-	    ATT_SetMTUSizeMax(23);
-	    llInitFeatureSet2MPHY(FALSE);
-	    llInitFeatureSetDLE(FALSE);
-    #endif
-    // Setup a delayed profile startup
-    osal_set_event( simpleBLEPeripheral_TaskID, SBP_START_DEVICE_EVT );
-    // for receive HCI complete message
-    GAP_RegisterForHCIMsgs(simpleBLEPeripheral_TaskID);
+  if (g_dispenser.device_case == SYS_DEV_CASE_1)
+  {
 
-	LL_PLUS_PerStats_Init(&g_perStatsByChanTest);
+  }
+  else if (g_dispenser.device_case == SYS_DEV_CASE_2)
+  {
+    dss_add_service(sys_on_ble_dss_service_evt);
+  }
+  else if (g_dispenser.device_case == SYS_DEV_CASE_3)
+  {
+    mcs_add_service(sys_on_ble_mcs_service_evt);
+  }
 
-	LOG("=====SimpleBLEPeripheral_Init Done=======\n");
+  Batt_AddService();
+  bsp_init();
 
+  // Setup a delayed profile startup
+  osal_set_event(simpleBLEPeripheral_TaskID, BUP_OSAL_EVT_START_DEVICE);
+}
+
+void ble_adv_enable(bool enable)
+{
+  GAPRole_SetParameter(GAPROLE_ADVERT_ENABLED, sizeof(uint8), &enable);
+}
+
+static void BUP_ProcessOSALMsg(osal_event_hdr_t *pMsg)
+{
+  switch (pMsg->event)
+  {
+  default:
+    // do nothing
+    break;
+  }
 }
 
 /*********************************************************************
@@ -363,94 +344,85 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
  *
  * @return  events not processed
  */
-uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
+uint16 bleuart_ProcessEvent(uint8 task_id, uint16 events)
 {
-    VOID task_id; // OSAL required parameter that isn't used in this function
+  VOID task_id; // OSAL required parameter that isn't used in this function
 
-    if ( events & SYS_EVENT_MSG )
+  if (events & SYS_EVENT_MSG)
+  {
+    uint8 *pMsg;
+
+    if ((pMsg = osal_msg_receive(simpleBLEPeripheral_TaskID)) != NULL)
     {
-        uint8 *pMsg;
+      BUP_ProcessOSALMsg((osal_event_hdr_t *)pMsg);
 
-        if ( (pMsg = osal_msg_receive( simpleBLEPeripheral_TaskID )) != NULL )
-        {
-            simpleBLEPeripheral_ProcessOSALMsg( (osal_event_hdr_t *)pMsg );
-
-            // Release the OSAL message
-            VOID osal_msg_deallocate( pMsg );
-        }
-
-        // return unprocessed events
-        return (events ^ SYS_EVENT_MSG);
+      // Release the OSAL message
+      VOID osal_msg_deallocate(pMsg);
     }
 
-    if ( events & SBP_START_DEVICE_EVT )
-    {
-        // Start the Device
-        VOID GAPRole_StartDevice( &simpleBLEPeripheral_PeripheralCBs );
-    #if (DEF_GAPBOND_MGR_ENABLE==1)
-        // Start Bond Manager, 2017-11-15
-        VOID GAPBondMgr_Register( &simpleBLEPeripheral_BondMgrCBs );
-    #endif
-        HCI_LE_ReadResolvingListSizeCmd();
+    // return unprocessed events
+    return (events ^ SYS_EVENT_MSG);
+  }
 
-        return ( events ^ SBP_START_DEVICE_EVT );
-    }
-    // enable adv
-    if ( events & SBP_RESET_ADV_EVT )
-    {
-        uint8 initial_advertising_enable = TRUE;
-        GAPRole_SetParameter( GAPROLE_ADVERT_ENABLED, sizeof( uint8 ), &initial_advertising_enable );
-        return ( events ^ SBP_RESET_ADV_EVT );
-    } 
+  if (events & BUP_OSAL_EVT_START_DEVICE)
+  {
+    // Start the Device
+    VOID GAPRole_StartDevice(&bleuart_PeripheralCBs);
 
-	if(events & SBP_DEALDATA){
-		LOG("\ndeal app datas in events!!!\n");
-		return(events ^ SBP_DEALDATA);
-	}
-    // Discard unknown events
-    return 0;
-}
+    return (events ^ BUP_OSAL_EVT_START_DEVICE);
+  }
 
-/*********************************************************************
- * @fn      simpleBLEPeripheral_ProcessOSALMsg
- *
- * @brief   Process an incoming task message.
- *
- * @param   pMsg - message to process
- *
- * @return  none
- */
-static void simpleBLEPeripheral_ProcessOSALMsg( osal_event_hdr_t *pMsg )
-{
-	hciEvt_CmdComplete_t *pHciMsg;
+  // enable adv
+  if (events & BUP_OSAL_EVT_RESET_ADV)
+  {
+    uint8 initial_advertising_enable = TRUE;
 
-	switch ( pMsg->event ){  
-		case HCI_GAP_EVENT_EVENT:{
-			switch( pMsg->status ){
-				case HCI_COMMAND_COMPLETE_EVENT_CODE:
-					pHciMsg = (hciEvt_CmdComplete_t *)pMsg;
-					LOG("==> HCI_COMMAND_COMPLETE_EVENT_CODE: %x\n", pHciMsg->cmdOpcode);
-					//safeToDealloc = gapProcessHCICmdCompleteEvt( (hciEvt_CmdComplete_t *)pMsg );
-				break;
-				
-				default:
-					//safeToDealloc = FALSE;  // Send to app
-				break;
-			}
-		}
-	}
-}
-/*********************************************************************
- * @fn      peripheralStateReadRssiCB
- *
- * @brief   Notification from the profile of a state change.
- *
- * @param   newState - new state
- *
- * @return  none
- */
-static void peripheralStateReadRssiCB( int8  rssi )
-{
+    GAPRole_SetParameter(GAPROLE_ADVERT_ENABLED, sizeof(uint8), &initial_advertising_enable);
+
+    return (events ^ BUP_OSAL_EVT_RESET_ADV);
+  }
+
+  if (events & BUP_OSAL_EVT_NOTIFY_DATA)
+  {
+    LOG("BUP_OSAL_EVT_NOTIFY_DATA\n");
+    return (events ^ BUP_OSAL_EVT_NOTIFY_DATA);
+  }
+
+  if (events & BUP_OSAL_EVT_BLE_TIMER)
+  {
+    LOG("BUP_OSAL_EVT_BLE_TIMER\n");
+    return (events ^ BUP_OSAL_EVT_BLE_TIMER);
+  }
+  if (events & BUP_OSAL_EVT_UARTRX_TIMER)
+  {
+    LOG("BUP_OSAL_EVT_UARTRX_TIMER\n");
+    return (events ^ BUP_OSAL_EVT_UARTRX_TIMER);
+  }
+
+  if (events & BUP_OSAL_EVT_UART_TX_COMPLETE)
+  {
+    LOG("BUP_OSAL_EVT_UART_TX_COMPLETE\n");
+    return (events ^ BUP_OSAL_EVT_UART_TX_COMPLETE);
+  }
+
+  if (events & BUP_OSAL_EVT_UART_TO_TIMER)
+  {
+    LOG("RX TO\n");
+    return (events ^ BUP_OSAL_EVT_UART_TO_TIMER);
+  }
+
+  if (events & BUP_OSAL_EVT_RF433_KEY)
+  {
+    return (events ^ BUP_OSAL_EVT_RF433_KEY);
+  }
+
+  if (events & BUP_OSAL_EVT_AT)
+  {
+    return (events ^ BUP_OSAL_EVT_AT);
+  }
+
+  // Discard unknown events
+  return 0;
 }
 
 /*********************************************************************
@@ -462,99 +434,72 @@ static void peripheralStateReadRssiCB( int8  rssi )
  *
  * @return  none
  */
- static void peripheralStateNotificationCB( gaprole_States_t newState )
+
+static void bleuart_StateNotificationCB(gaprole_States_t newState)
 {
-    switch ( newState )
-    {
-        case GAPROLE_STARTED:
-        {
-            #if(0) 
-            uint8 systemId[DEVINFO_SYSTEM_ID_LEN];
-            // use 6 bytes of device address for 8 bytes of system ID value
-            systemId[0] = ownAddress[0];
-            systemId[1] = ownAddress[1];
-            systemId[2] = ownAddress[2];
-        
-            // set middle bytes to zero
-            systemId[4] = 0x00;
-            systemId[3] = 0x00;
-        
-            // shift three bytes up
-            systemId[7] = ownAddress[5];
-            systemId[6] = ownAddress[4];
-            systemId[5] = ownAddress[3];
-        
-            DevInfo_SetParameter(DEVINFO_SYSTEM_ID, DEVINFO_SYSTEM_ID_LEN, systemId);
-               
-			extern uint8 ownPublicAddr[LL_DEVICE_ADDR_LEN];
-			// update MAC.Attention to the sequence of MAC address!!!
-			for(uint8 i = 0;i < LL_DEVICE_ADDR_LEN;i++){
-				ownPublicAddr[i]	=	dev_mac_data[LL_DEVICE_ADDR_LEN - 1 - i];
-			}
-			#endif 
-            LOG("Gaprole_start:\n");
-			osal_set_event(simpleBLEPeripheral_TaskID, SBP_RESET_ADV_EVT);                                     
-        }
-        break;
-        
-        case GAPROLE_ADVERTISING:
-		{
-			LOG("Gaprole_adversting:\n");
-		}   
-        break;
-        
-        case GAPROLE_CONNECTED:
-            HCI_PPLUS_ConnEventDoneNoticeCmd(simpleBLEPeripheral_TaskID, NULL); 
-            LOG("Gaprole_Connected:\n");
-        break;
-        
-        case GAPROLE_CONNECTED_ADV:
-	    break;      
-        case GAPROLE_WAITING:
-        	LOG("Gaprole_Disconnection:\n");
-        break;
-        
-        case GAPROLE_WAITING_AFTER_TIMEOUT:
-        	LOG("Gaprole_waitting_after_timerout:\n");
-        break;
-        
-        case GAPROLE_ERROR:
-        break;
-        
-        default:
-        break;        
-    }  
-    gapProfileState = newState;
-	LOG("[GAP ROLE %d]\n",newState);
-     
-    VOID gapProfileState;     
+  switch (newState)
+  {
+  case GAPROLE_STARTED:
+  {
+    uint8 ownAddress[B_ADDR_LEN];
+    uint8 systemId[DEVINFO_SYSTEM_ID_LEN];
+
+    GAPRole_GetParameter(GAPROLE_BD_ADDR, ownAddress);
+
+    // use 6 bytes of device address for 8 bytes of system ID value
+    systemId[0] = ownAddress[0];
+    systemId[1] = ownAddress[1];
+    systemId[2] = ownAddress[2];
+
+    // set middle bytes to zero
+    systemId[4] = 0x00;
+    systemId[3] = 0x00;
+
+    // shift three bytes up
+    systemId[7] = ownAddress[5];
+    systemId[6] = ownAddress[4];
+    systemId[5] = ownAddress[3];
+
+    DevInfo_SetParameter(DEVINFO_SYSTEM_ID, DEVINFO_SYSTEM_ID_LEN, systemId);
+
+  }
+  break;
+
+  case GAPROLE_ADVERTISING:
+    LOG("advertising!\n");
+    break;
+
+  case GAPROLE_CONNECTED:
+    GAPRole_GetParameter(GAPROLE_CONNHANDLE, &gapConnHandle);
+    LOG("connected handle[%d]!\n", gapConnHandle);
+    break;
+
+  case GAPROLE_CONNECTED_ADV:
+    break;
+  case GAPROLE_WAITING:
+    sys_ble_disconneted_state();
+    break;
+
+  case GAPROLE_WAITING_AFTER_TIMEOUT:
+    break;
+
+  case GAPROLE_ERROR:
+    break;
+
+  default:
+    break;
+  }
+  gapProfileState = newState;
+
+  VOID gapProfileState;
 }
 
-
-/*********************************************************************
- * @fn      simpleProfileChangeCB
- *
- * @brief   Callback from SimpleBLEProfile indicating a value change
- *
- * @param   paramID - parameter ID of the value that was changed.
- *
- * @return  none
- */
-static void simpleProfileChangeCB( uint8 paramID )
+void ble_set_device_name(uint8 *data, uint8 len)
 {
-    
-	switch( paramID )
-	{
-		case SIMPLEPROFILE_CHAR1:
- 
-		break;
+  uint8 dev_name[15] = {0};
 
-		default:
-			// not process other attribute change
-		break;
-	}
+  osal_memcpy(dev_name, data, len);
+  osal_memcpy(&scanRspData[2], dev_name, 15);
 }
-
-
 /*********************************************************************
 *********************************************************************/
