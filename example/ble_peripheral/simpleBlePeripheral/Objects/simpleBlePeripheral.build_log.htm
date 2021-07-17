@@ -1,0 +1,110 @@
+<html>
+<body>
+<pre>
+<h1>µVision Build Log</h1>
+<h2>Tool Versions:</h2>
+IDE-Version: ¦ÌVision V5.25.2.0
+Copyright (C) 2018 ARM Ltd and ARM Germany GmbH. All rights reserved.
+License Information: J J, J, LIC=MGX01-CIH3P-BUT4K-ZA6MU-M13VG-ZYP7W
+ 
+Tool Versions:
+Toolchain:       MDK-ARM Professional  Version: 5.25.2.0
+Toolchain Path:  C:\JFM2\KEIL_ARM\ARM\ARMCC\Bin
+C Compiler:      Armcc.exe V5.06 update 6 (build 750)
+Assembler:       Armasm.exe V5.06 update 6 (build 750)
+Linker/Locator:  ArmLink.exe V5.06 update 6 (build 750)
+Library Manager: ArmAr.exe V5.06 update 6 (build 750)
+Hex Converter:   FromElf.exe V5.06 update 6 (build 750)
+CPU DLL:         SARMCM3.DLL V5.25.2.0
+Dialog DLL:      DARMCM1.DLL V1.19.1.0
+Target DLL:      UL2CM3.DLL V1.160.12.0
+Dialog DLL:      TARMCM1.DLL V1.14.0.0
+ 
+<h2>Project:</h2>
+C:\Users\JFM\Desktop\work1\demo\beacon\3.0.9.1\example\ble_peripheral\simpleBlePeripheral\simpleBlePeripheral.uvprojx
+Project File Date:  07/06/2021
+
+<h2>Output:</h2>
+*** Using Compiler 'V5.06 update 6 (build 750)', folder: 'C:\JFM2\KEIL_ARM\ARM\ARMCC\Bin'
+Rebuild target 'Target 1'
+compiling main.c...
+compiling uart.c...
+compiling clock.c...
+compiling key.c...
+compiling gpio.c...
+compiling timer.c...
+compiling my_printf.c...
+compiling pwm.c...
+compiling pwrmgr.c...
+..\..\..\components\driver\pwrmgr\pwrmgr.c(30): warning:  #1215-D: #warning directive: "CONFIG FLASH ENABLE DEEP SLEEP !!!"
+      #warning "CONFIG FLASH ENABLE DEEP SLEEP !!!"
+..\..\..\components\driver\pwrmgr\pwrmgr.c: 1 warning, 0 errors
+compiling osal_snv.c...
+compiling flash.c...
+compiling gap.c...
+compiling fs.c...
+compiling gapgattserver.c...
+compiling peripheral.c...
+compiling ota_app_service.c...
+..\..\..\components\profiles\ota_app\ota_app_service.c(35): warning:  #550-D: variable "ota_key_register_flag"  was set but never used
+  static uint8 ota_key_register_flag=0;
+..\..\..\components\profiles\ota_app\ota_app_service.c(36): warning:  #550-D: variable "ota_key_check_flag"  was set but never used
+  static uint8 ota_key_check_flag=0;
+..\..\..\components\profiles\ota_app\ota_app_service.c: 2 warnings, 0 errors
+compiling gattservapp.c...
+compiling sbpProfile_ota.c...
+source\sbpProfile_ota.c(79): warning:  #550-D: variable "ReadNotify_Len"  was set but never used
+  static	uint8	ReadNotify_Len		=	0;
+source\sbpProfile_ota.c: 1 warning, 0 errors
+compiling SimpleBLEPeripheral_Main.c...
+assembling startup_ARMCM0.s...
+compiling central.c...
+compiling jump_table.c...
+compiling OSAL_SimpleBLEPeripheral.c...
+compiling gapbondmgr.c...
+compiling simpleBLEPeripheral.c...
+source\simpleBLEPeripheral.c(425): warning:  #550-D: variable "pHciMsg"  was set but never used
+  	hciEvt_CmdComplete_t *pHciMsg;
+source\simpleBLEPeripheral.c(210): warning:  #177-D: variable "simpleBLEPeripheral_SimpleProfileCBs"  was declared but never referenced
+  static simpleProfileCBs_t simpleBLEPeripheral_SimpleProfileCBs =
+source\simpleBLEPeripheral.c: 2 warnings, 0 errors
+compiling system_ARMCM0.c...
+linking...
+.\scatter_load.sct(15): warning: L6329W: Pattern rf_phy_driver.o(i.rf_phy_dtm*) only matches removed unused sections.
+.\scatter_load.sct(16): warning: L6329W: Pattern rf_phy_driver.o(i.rf_phy_direct_*) only matches removed unused sections.
+.\scatter_load.sct(41): warning: L6329W: Pattern pwm.o(RO) only matches removed unused sections.
+.\scatter_load.sct(42): warning: L6329W: Pattern ota_app_service.o(RO) only matches removed unused sections.
+.\scatter_load.sct(43): warning: L6329W: Pattern my_printf.o(RO) only matches removed unused sections.
+Program Size: Code=38496 RO-data=1624 RW-data=1972 ZI-data=10644  
+Finished: 0 information, 5 warning and 0 error messages.
+FromELF: creating hex file...
+After Build - User command #1: fromelf.exe .\Objects\simpleBlePeripheral.axf --i32combined --output .\bin\simpleBlePeripheral.hex
+After Build - User command #2: fromelf -c -a -d -e -v -o simpleBlePeripheral.asm ./Objects/simpleBlePeripheral.axf
+".\Objects\simpleBlePeripheral.axf" - 0 Error(s), 11 Warning(s).
+
+<h2>Software Packages used:</h2>
+
+Package Vendor: ARM
+                http://www.keil.com/pack/ARM.CMSIS.5.3.0.pack
+                ARM.CMSIS.5.3.0
+                CMSIS (Cortex Microcontroller Software Interface Standard)
+   * Component: CORE Version: 5.1.1
+   * Component: Startup Version: 1.0.1
+
+<h2>Collection of Component include folders:</h2>
+  .\RTE\_Target_1
+  C:\JFM2\KEIL_ARM\ARM\PACK\ARM\CMSIS\5.3.0\CMSIS\Include
+  C:\JFM2\KEIL_ARM\ARM\PACK\ARM\CMSIS\5.3.0\Device\ARM\ARMCM0\Include
+
+<h2>Collection of Component Files used:</h2>
+
+   * Component: ARM::CMSIS:CORE:5.1.1
+
+   * Component: ARM::Device:Startup:1.0.1
+      Source file:   Device\ARM\ARMCM0\Source\ARM\startup_ARMCM0.s
+      Include file:  Device\ARM\ARMCM0\Include\ARMCM0.h
+      Source file:   Device\ARM\ARMCM0\Source\system_ARMCM0.c
+Build Time Elapsed:  00:00:03
+</pre>
+</body>
+</html>
