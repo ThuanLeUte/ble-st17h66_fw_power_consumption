@@ -71,8 +71,8 @@ const pTaskEventHandlerFn tasksArr[] =
     GAPBondMgr_ProcessEvent,                                          // task , add 2017-11-15
     #endif
     GATTServApp_ProcessEvent,                                         // task 7
-    bleuart_ProcessEvent,                                 // task 8
-    ble_timer_process_event      // task 9
+    ble_timer_process_event,                            // task 8
+    bleuart_ProcessEvent                                 // task 9
 };
 
 const uint8 tasksCnt = sizeof( tasksArr ) / sizeof( tasksArr[0] );
@@ -121,9 +121,9 @@ void osalInitTasks( void )
     GATTServApp_Init( taskID++ );
 
   /* Application */
-  bleuart_Init( taskID++);
+  ble_timer_init(taskID++);
 
-  ble_timer_init(taskID);
+  bleuart_Init( taskID);
 }
 #endif
 /*********************************************************************

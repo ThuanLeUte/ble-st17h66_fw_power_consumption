@@ -65,6 +65,7 @@ void sys_init(void)
   }
 
   ble_set_device_name(g_dispenser.device_name, strlen((const char *)g_dispenser.device_name));
+  ble_timer_start(TIMER_HALL_CHECK_EVT);
 }
 
 void sys_ble_disconneted_state(void)
@@ -95,46 +96,42 @@ void bsp_pin_event_handler(GPIO_Pin_e pin, IO_Wakeup_Pol_e type)
     m_btn_time = 5000;
     ble_timer_start(TIMER_BUTTON_HANDLER_EVT);
   }
-  else if (HALL_SENSOR_LOGIC == pin)
-  {
-    LOG("Hall is pressed \n");
-    m_hall_time = 5000;
-    ble_timer_start(TIMER_HALL_HANDLER_EVT);
-  }
 }
 
-void ble_timer_button_handler(void)
+void ble_timer_hall_check(void)
 {
-  if (m_btn_time != 0)
+  static bool is_hall_on = false;
+  static uint8_t hall_on_cnt = 0;
+
+  hal_gpio_write(HALL_SENSOR_PWM, 1);
+  WaitMs(100);
+
+  // Hall on
+  if (hal_gpio_read(HALL_SENSOR_LOGIC) == 0)
   {
-    m_btn_time -= 100;
+    LOG(" Hall is pressed\n");
+    is_hall_on = true;
 
-    if (hal_gpio_read(USER_BUTTON) == 1)
+    if (++hall_on_cnt >= 10)
     {
-      ble_timer_stop(TIMER_HALL_HANDLER_EVT);
-    }
-    else if (m_btn_time == 0)
-    {
-      LOG("Bottle available \n");
-      g_dispenser.bottle_replacement = 1;
+      LOG(" Hall is pressed more than 5 seconds\n");
+      g_dispenser.bottle_replacement = 0;
+      g_dispenser.click_count = 0;
 
-      m_sys_led_blink(2, 2);
-      m_sys_witch_to_case(SYS_DEV_CASE_3, true);
+      m_sys_led_blink(3, 2);
+      m_sys_witch_to_case(SYS_DEV_CASE_2, true);
+
+      hall_on_cnt = 0;
     }
   }
-}
-
-void ble_timer_hall_handler(void)
-{
-  if (m_hall_time != 0)
+  else
   {
-    m_hall_time -= 100;
-
-    if (hal_gpio_read(HALL_SENSOR_LOGIC) == 1)
+    if (is_hall_on)
     {
+      LOG(" Hall is released\n");
+
       m_sys_led_blink(1, 1);
 
-      ble_timer_stop(TIMER_HALL_HANDLER_EVT);
       ble_timer_start(TIMER_EXPIRED_CLICK_EVT);
 
       if (++g_dispenser.click_count >= MODE_TABLE[g_dispenser.mode_selected])
@@ -152,15 +149,34 @@ void ble_timer_hall_handler(void)
 
       LOG("Mode select = %d, max click = %d\n", g_dispenser.mode_selected, MODE_TABLE[g_dispenser.mode_selected]);
       LOG("Click count = %d\n", g_dispenser.click_count);
+
+      is_hall_on = false;
+      hall_on_cnt = 0;
     }
   }
-  else if (m_hall_time == 0)
-  {
-    g_dispenser.bottle_replacement = 0;
-    g_dispenser.click_count        = 0;
 
-    m_sys_led_blink(3, 2);
-    m_sys_witch_to_case(SYS_DEV_CASE_2, true);
+  hal_gpio_write(HALL_SENSOR_PWM, 0);
+}
+
+void ble_timer_button_handler(void)
+{
+  if (m_btn_time != 0)
+  {
+    m_btn_time -= 100;
+
+    if (hal_gpio_read(USER_BUTTON) == 1)
+    {
+      ble_timer_stop(TIMER_BUTTON_HANDLER_EVT);
+    }
+
+    if (m_btn_time == 0 && (hal_gpio_read(USER_BUTTON) == 0))
+    {
+      LOG("Bottle available \n");
+      g_dispenser.bottle_replacement = 1;
+
+      m_sys_led_blink(2, 2);
+      m_sys_witch_to_case(SYS_DEV_CASE_3, true);
+    }
   }
 }
 

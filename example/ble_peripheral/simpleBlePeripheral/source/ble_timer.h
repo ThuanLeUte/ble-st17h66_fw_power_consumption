@@ -17,9 +17,9 @@
 #include "stdint.h"
 
 /* Public defines ---------------------------------------------------- */
-#define TIMER_EXPIRED_CLICK_EVT       (0x0001)
+#define TIMER_EXPIRED_CLICK_EVT    (0x0001)
 #define TIMER_BUTTON_HANDLER_EVT   (0x0002)
-#define TIMER_HALL_HANDLER_EVT      (0x0004)
+#define TIMER_HALL_CHECK_EVT       (0x0008)
 
 /* Public Callbacks -------------------------------------------------- */
 /**
@@ -33,7 +33,7 @@
  */
 void ble_timer_expired_click(void); 
 void ble_timer_button_handler(void); 
-void ble_timer_hall_handler(void);
+void ble_timer_hall_check(void);
 
 
 /* Public function prototypes ----------------------------------------- */
