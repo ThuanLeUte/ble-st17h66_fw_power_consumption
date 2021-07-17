@@ -52,9 +52,9 @@
  
 #define DEFAULT_DISCOVERABLE_MODE				GAP_ADTYPE_FLAGS_GENERAL
 // Minimum connection interval (units of 1.25ms, 80=100ms) if automatic parameter update request is enabled
-#define DEFAULT_DESIRED_MIN_CONN_INTERVAL		120//32//80
+#define DEFAULT_DESIRED_MIN_CONN_INTERVAL		8//120//32//80
 // Maximum connection interval (units of 1.25ms, 800=1000ms) if automatic parameter update request is enabled
-#define DEFAULT_DESIRED_MAX_CONN_INTERVAL		160//48//800
+#define DEFAULT_DESIRED_MAX_CONN_INTERVAL		10//160//48//800
 // Slave latency to use if automatic parameter update request is enabled
 #define DEFAULT_DESIRED_SLAVE_LATENCY			0
 // Supervision timeout value (units of 10ms, 1000=10s) if automatic parameter update request is enabled
