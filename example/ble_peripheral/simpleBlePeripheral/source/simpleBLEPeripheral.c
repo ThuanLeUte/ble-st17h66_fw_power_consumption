@@ -90,7 +90,7 @@
 uint8 Modify_BLEDevice_Data = 0;
 
 uint16 advInt[6] = {80, 160, 320, 800, 1600, 3200};
-uint8 advint = 2;
+uint8 advint = 4;
 
 uint8 AT_bleuart_auto = 0x59;
 uint8 AT_bleuart_sleep = 0;

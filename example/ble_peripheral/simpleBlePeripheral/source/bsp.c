@@ -36,13 +36,12 @@ void bsp_init(void)
   hal_gpio_pin_init(HALL_SENSOR_LOGIC, GPIO_INPUT);
   hal_gpio_pin_init(USER_BUTTON, GPIO_INPUT);
 
-  hal_gpio_pull_set(LED_INDICATE, GPIO_PULL_UP);
-
+  hal_gpioretention_register(HALL_SENSOR_PWM);
   hal_gpio_write(LED_INDICATE, 0);
-  hal_gpio_write(HALL_SENSOR_PWM, 0);
+  hal_gpio_write(HALL_SENSOR_PWM, 1);
 
   hal_gpioin_register(USER_BUTTON, NULL, bsp_pin_event_handler);
-  hal_gpioin_enable(HALL_SENSOR_LOGIC);
+  hal_gpioin_register(HALL_SENSOR_LOGIC, NULL, bsp_pin_event_handler);
 
   // bsp_battery_init();
 }
