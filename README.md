@@ -17,6 +17,9 @@ The device will have 3 CASE to broadcast the advertising service:
 1. **CASE 1:** 
   + The device is in the idle state, broadcast without custom service.
   + The device power up will be in CASE 1.
+  + A timer start when the device enter the case 1. The timer expire after 6 hours or stop and reset when device enter to case 3.
+	After timer expire the device enter to case 3 with  Click_Count=0
+
 
 2. **CASE 2:** 
   + For setting identification, mode.
