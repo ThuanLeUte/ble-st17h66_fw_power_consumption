@@ -27,7 +27,7 @@ static uint16_t m_hall_time        = 0;
 static uint16_t m_btn_time         = 0;
 
 /* Function prototypes ------------------------------------------------ */
-static void m_sys_witch_to_case(sys_device_case_t _case, bool reset);
+static void m_sys_switch_to_case(sys_device_case_t _case, bool reset);
 static void m_sys_led_blink(uint8_t blink, uint8_t time);
 
 /* Function definitions ----------------------------------------------- */
@@ -65,6 +65,12 @@ void sys_init(void)
   }
 
   ble_set_device_name(g_dispenser.device_name, strlen((const char *)g_dispenser.device_name));
+  
+  if (g_dispenser.device_case == SYS_DEV_CASE_1)
+  {
+    LOG("Start timer dipenser detected mode, expired in : %d second\n", TIMER_DISPENSER_DETETED_TIME / 1000);
+    ble_timer_start(TIMER_DISPENSER_DETECTED_EVT);
+  }
 }
 
 void sys_ble_disconneted_state(void)
@@ -72,14 +78,16 @@ void sys_ble_disconneted_state(void)
   switch (g_dispenser.device_case)
   {
   case SYS_DEV_CASE_1:
+    ble_timer_stop(TIMER_DISPENSER_DETECTED_EVT);
+    ble_timer_start(TIMER_DISPENSER_DETECTED_EVT);
     break;
 
   case SYS_DEV_CASE_2:
-    m_sys_witch_to_case(SYS_DEV_CASE_1, true);
+    m_sys_switch_to_case(SYS_DEV_CASE_1, true);
     break;
 
   case SYS_DEV_CASE_3:
-    m_sys_witch_to_case(SYS_DEV_CASE_1, true);
+    m_sys_switch_to_case(SYS_DEV_CASE_1, true);
     break;
 
   default:
@@ -119,7 +127,7 @@ void ble_timer_button_handler(void)
       g_dispenser.bottle_replacement = 1;
 
       m_sys_led_blink(2, 2);
-      m_sys_witch_to_case(SYS_DEV_CASE_3, true);
+      m_sys_switch_to_case(SYS_DEV_CASE_3, true);
     }
   }
 }
@@ -142,7 +150,7 @@ void ble_timer_hall_handler(void)
         LOG("Click: %d, Mode: %d\n", g_dispenser.click_count, g_dispenser.mode_selected);
         if (g_dispenser.device_case != SYS_DEV_CASE_3)
         {
-          m_sys_witch_to_case(SYS_DEV_CASE_3, true);
+          m_sys_switch_to_case(SYS_DEV_CASE_3, true);
         }
         else
         {
@@ -160,14 +168,21 @@ void ble_timer_hall_handler(void)
     g_dispenser.click_count        = 0;
 
     m_sys_led_blink(3, 2);
-    m_sys_witch_to_case(SYS_DEV_CASE_2, true);
+    m_sys_switch_to_case(SYS_DEV_CASE_2, true);
   }
 }
 
 void ble_timer_expired_click(void)
 {
   LOG("Time expired, Click: %d, Mode: %d\n", g_dispenser.click_count, g_dispenser.mode_selected);
-  m_sys_witch_to_case(SYS_DEV_CASE_3, true);
+  m_sys_switch_to_case(SYS_DEV_CASE_3, true);
+}
+
+void ble_timer_dipenser_detected_handler(void)
+{
+  LOG("Dispenser goto detected mode\n");
+  g_dispenser.click_count = 0;
+  m_sys_switch_to_case(SYS_DEV_CASE_3, true);
 }
 
 void sys_on_ble_mcs_service_evt(mcs_evt_t *pev)
@@ -240,7 +255,7 @@ switch (pev->evt_id)
 }
 
 /* Private function definitions --------------------------------------- */
-static void m_sys_witch_to_case(sys_device_case_t _case, bool reset)
+static void m_sys_switch_to_case(sys_device_case_t _case, bool reset)
 {
   g_dispenser.device_case = _case;
   osal_snv_write(DEVICE_STORE_DATA_FS_ID, sizeof(device_t) / sizeof(uint8_t), &g_dispenser);
