@@ -472,12 +472,13 @@ static void bleuart_StateNotificationCB(gaprole_States_t newState)
   case GAPROLE_CONNECTED:
     GAPRole_GetParameter(GAPROLE_CONNHANDLE, &gapConnHandle);
     LOG("connected handle[%d]!\n", gapConnHandle);
+    sys_ble_connected_state();
     break;
 
   case GAPROLE_CONNECTED_ADV:
     break;
   case GAPROLE_WAITING:
-    sys_ble_disconneted_state();
+    sys_ble_disconnected_state();
     break;
 
   case GAPROLE_WAITING_AFTER_TIMEOUT:

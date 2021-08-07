@@ -66,14 +66,26 @@ void sys_init(void)
 
   ble_set_device_name(g_dispenser.device_name, strlen((const char *)g_dispenser.device_name));
   
-  if (g_dispenser.device_case == SYS_DEV_CASE_1)
+  switch (g_dispenser.device_case)
   {
+  case SYS_DEV_CASE_1:
     LOG("Start timer dipenser detected mode, expired in : %d second\n", TIMER_DISPENSER_DETETED_TIME / 1000);
     ble_timer_start(TIMER_DISPENSER_DETECTED_EVT);
+    break;
+  
+  case SYS_DEV_CASE_2:
+    LOG("Start timer case 2 expired, expired in : %d second\n", TIMER_CASE2_EXPIRED_TIME / 1000);
+    LOG("Start timer case 2 led indicate, expired in : %d second\n", TIMER_CASE2_LED_INDICATE_TIME / 1000);
+    ble_timer_start(TIMER_CASE2_EXPIRED_EVT);
+    ble_timer_start(TIMER_CASE2_LED_INDICATE_EVT);
+    break;
+  
+  default:
+    break;
   }
 }
 
-void sys_ble_disconneted_state(void)
+void sys_ble_disconnected_state(void)
 {
   switch (g_dispenser.device_case)
   {
@@ -88,6 +100,25 @@ void sys_ble_disconneted_state(void)
 
   case SYS_DEV_CASE_3:
     m_sys_switch_to_case(SYS_DEV_CASE_1, true);
+    break;
+
+  default:
+    break;
+  }
+}
+
+void sys_ble_connected_state(void)
+{
+  switch (g_dispenser.device_case)
+  {
+  case SYS_DEV_CASE_1:
+    break;
+
+  case SYS_DEV_CASE_2:
+    ble_timer_stop(TIMER_CASE2_EXPIRED_EVT);
+    break;
+
+  case SYS_DEV_CASE_3:
     break;
 
   default:
@@ -140,7 +171,7 @@ void ble_timer_hall_handler(void)
 
     if (hal_gpio_read(HALL_SENSOR_LOGIC) == 1)
     {
-      m_sys_led_blink(1, 1);
+      // m_sys_led_blink(1, 1);
 
       ble_timer_stop(TIMER_HALL_HANDLER_EVT);
       ble_timer_start(TIMER_EXPIRED_CLICK_EVT);
@@ -183,6 +214,16 @@ void ble_timer_dipenser_detected_handler(void)
   LOG("Dispenser goto detected mode\n");
   g_dispenser.click_count = 0;
   m_sys_switch_to_case(SYS_DEV_CASE_3, true);
+}
+
+void ble_timer_case2_expired_handler(void)
+{
+  m_sys_switch_to_case(SYS_DEV_CASE_1, true);
+}
+
+void ble_timer_case2_led_indicate_handler(void)
+{
+  m_sys_led_blink(2, 1);
 }
 
 void sys_on_ble_mcs_service_evt(mcs_evt_t *pev)

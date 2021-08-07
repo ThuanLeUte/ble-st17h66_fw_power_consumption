@@ -21,11 +21,15 @@
 #define TIMER_BUTTON_HANDLER_EVT         (0x0002)
 #define TIMER_HALL_HANDLER_EVT           (0x0004)
 #define TIMER_DISPENSER_DETECTED_EVT     (0x0008)
+#define TIMER_CASE2_EXPIRED_EVT          (0x0010)
+#define TIMER_CASE2_LED_INDICATE_EVT     (0x0020)
 
-#define TIMER_EXPIRED_CLICK_TIME         (60 * 1000) // 60 Seconds
-#define TIMER_BUTTON_HANDLER_TIME        (100)       // 0.1 Seconds
-#define TIMER_HALL_HANDLER_TIME          (100)       // 0.1 Seconds
-#define TIMER_DISPENSER_DETETED_TIME     (60 * 1000) // 60 Seconds
+#define TIMER_EXPIRED_CLICK_TIME         (60 * 1000)           // 60 Seconds
+#define TIMER_BUTTON_HANDLER_TIME        (100)                 // 0.1 Seconds
+#define TIMER_HALL_HANDLER_TIME          (100)                 // 0.1 Seconds
+#define TIMER_DISPENSER_DETETED_TIME     (6 * 60 * 60 * 1000)  // 6 Hours
+#define TIMER_CASE2_EXPIRED_TIME         (3 * 60 * 1000)       // 3 Minutes
+#define TIMER_CASE2_LED_INDICATE_TIME    (5 * 1000)            // 5 Seconds
 
 /* Public Callbacks -------------------------------------------------- */
 /**
@@ -41,6 +45,8 @@ void ble_timer_expired_click(void);
 void ble_timer_button_handler(void); 
 void ble_timer_hall_handler(void);
 void ble_timer_dipenser_detected_handler(void);
+void ble_timer_case2_expired_handler(void);
+void ble_timer_case2_led_indicate_handler(void);
 
 /* Public function prototypes ----------------------------------------- */
 /**

@@ -56,7 +56,8 @@ sys_device_case_t;
 void sys_on_ble_mcs_service_evt(mcs_evt_t *pev);
 void sys_on_ble_dss_service_evt(dss_evt_t *pev);
 void sys_init(void);
-void sys_ble_disconneted_state(void);
+void sys_ble_disconnected_state(void);
+void sys_ble_connected_state(void);
 
 
 #endif // __SYS_H

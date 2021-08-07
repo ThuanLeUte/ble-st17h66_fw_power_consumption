@@ -27,6 +27,7 @@ The device will have 3 CASE to broadcast the advertising service:
   + Connect phone to set the IDENFICATION_SET and MODE_SET.
   + IDENFICATION_SET: Format is 4 Byte Unsigned Int Little Endian.
   + MODE_SET: Format is 1 Byte Unsigned Int Little Endian.
+  + If no connection the device will go to “CASE1” after 3 minutes
   + When the device is disconnected to phone, device will go to "CASE 1".
 
 3. **CASE 3:**
@@ -41,7 +42,7 @@ The device will have 3 CASE to broadcast the advertising service:
 + The LED should be off in CASE 1.
 + The LED should be BLINK one time when click happen (hall sensor) (for troubleshooting).
 + The LED should be double BLINK twice when bottle available.
-+ The LED should be triple BLINK twice when go to CASE 2
++ The LED should be triple BLINK twice when go to CASE 2 after that blinks twice every 5 seconds until go to “CASE1”
 ## BLE Service: Device Setting (0xFFF0)
 
 ### BLE Characteristics

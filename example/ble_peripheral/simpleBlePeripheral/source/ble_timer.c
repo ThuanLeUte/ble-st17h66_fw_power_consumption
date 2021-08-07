@@ -25,21 +25,34 @@ void ble_timer_init(uint8_t task_id)
 
 void ble_timer_start(uint16_t event_id)
 {
-  if (event_id == TIMER_EXPIRED_CLICK_EVT)
+  switch (event_id)
   {
+  case TIMER_EXPIRED_CLICK_EVT:
     osal_start_timerEx(m_task_id, event_id, TIMER_EXPIRED_CLICK_TIME);
-  }
-  else if(event_id == TIMER_BUTTON_HANDLER_EVT)
-  {
+    break;
+  
+  case TIMER_BUTTON_HANDLER_EVT:
     osal_start_reload_timer(m_task_id, event_id, TIMER_BUTTON_HANDLER_TIME);
-  }
-  else if(event_id == TIMER_HALL_HANDLER_EVT)
-  {
+    break;
+  
+  case TIMER_HALL_HANDLER_EVT:
     osal_start_reload_timer(m_task_id, event_id, TIMER_HALL_HANDLER_TIME);
-  }
-  else if (event_id == TIMER_DISPENSER_DETECTED_EVT)
-  {
+    break;
+  
+  case TIMER_DISPENSER_DETECTED_EVT:
     osal_start_timerEx(m_task_id, event_id, TIMER_DISPENSER_DETETED_TIME);
+    break;
+  
+  case TIMER_CASE2_EXPIRED_EVT:
+    osal_start_timerEx(m_task_id, event_id, TIMER_CASE2_EXPIRED_TIME);
+    break;
+  
+  case TIMER_CASE2_LED_INDICATE_EVT:
+    osal_start_reload_timer(m_task_id, event_id, TIMER_CASE2_LED_INDICATE_TIME);
+    break;
+  
+  default:
+    break;
   }
 }
 
@@ -69,6 +82,16 @@ uint16_t ble_timer_process_event(uint8_t task_id, uint16_t events)
   {
     ble_timer_dipenser_detected_handler();
     return (events ^ TIMER_DISPENSER_DETECTED_EVT);
+  }
+  else if (events & TIMER_CASE2_EXPIRED_EVT)
+  {
+    ble_timer_case2_expired_handler();
+    return (events ^ TIMER_CASE2_EXPIRED_EVT);
+  }
+  else if (events & TIMER_CASE2_LED_INDICATE_EVT)
+  {
+    ble_timer_case2_led_indicate_handler();
+    return (events ^ TIMER_CASE2_LED_INDICATE_EVT);
   }
 
   return 0;
