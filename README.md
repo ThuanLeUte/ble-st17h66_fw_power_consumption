@@ -41,7 +41,7 @@ The device will have 3 CASE to broadcast the advertising service:
 ## LED BEHAVIOR
 + The LED should be off in CASE 1.
 + The LED should be BLINK one time when click happen (hall sensor) (for troubleshooting).
-+ The LED should be double BLINK twice when bottle available.
++ The LED should be double BLINK 6 times when bottle available.
 + The LED should be triple BLINK twice when go to CASE 2 after that blinks twice every 5 seconds until go to “CASE1”
 ## BLE Service: Device Setting (0xFFF0)
 

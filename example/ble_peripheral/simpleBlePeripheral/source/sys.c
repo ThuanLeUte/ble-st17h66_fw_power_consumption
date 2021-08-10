@@ -157,7 +157,7 @@ void ble_timer_button_handler(void)
       LOG("Bottle available \n");
       g_dispenser.bottle_replacement = 1;
 
-      m_sys_led_blink(2, 2);
+      m_sys_led_blink(2, 6);
       m_sys_switch_to_case(SYS_DEV_CASE_3, true);
     }
   }
