@@ -35,6 +35,7 @@ device_t;
 
 /* Public variables --------------------------------------------------- */
 extern device_t g_dispenser;
+extern uint8_t battery_level;
 
 /* Public Callbacks -------------------------------------------------- */
 /* Public function prototypes ----------------------------------------- */

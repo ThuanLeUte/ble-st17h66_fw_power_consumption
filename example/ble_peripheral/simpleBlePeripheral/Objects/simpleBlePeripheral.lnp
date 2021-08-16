@@ -22,6 +22,7 @@
 ".\objects\gapbondmgr.o"
 ".\objects\battservice.o"
 ".\objects\devinfoservice.o"
+".\objects\bsp_adc.o"
 ".\objects\jump_table.o"
 "..\..\..\lib\rf.lib"
 "..\..\..\lib\ble_host.lib"

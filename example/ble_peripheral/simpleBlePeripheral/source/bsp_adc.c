@@ -19,6 +19,9 @@
 #include "adc.h"
 #include "bsp_adc.h"
 #include "log.h"
+#include "damos_ram.h"
+#include "battservice.h"
+
 /*********************************************************************
     TYPEDEFS
 */
@@ -26,22 +29,11 @@
 /*********************************************************************
     GLOBAL VARIABLES
 */
-#define MAX_SAMPLE_POINT    64
+#define MAX_SAMPLE_POINT 64
 uint16_t adc_debug[6][MAX_SAMPLE_POINT];
 static uint8_t channel_done_flag = 0;
 
-/*********************************************************************
-    EXTERNAL VARIABLES
-*/
-
-/*********************************************************************
-    EXTERNAL FUNCTIONS
-*/
-
-/*********************************************************************
-    LOCAL VARIABLES
-*/
-static uint8 adcDemo_TaskID;   // Task ID for internal task/event processing
+static uint8 adcDemo_TaskID; // Task ID for internal task/event processing
 /*
     channel:
     is_differential_mode:
@@ -57,185 +49,158 @@ static uint8 adcDemo_TaskID;   // Task ID for internal task/event processing
     other adc channel cannot work.
 */
 adc_Cfg_t adc_cfg =
-{
-    .channel = ADC_BIT(ADC_CH3P_P20)|ADC_BIT(ADC_CH2P_P14)|ADC_BIT(ADC_CH3N_P15),
-    .is_continue_mode = FALSE,
-    .is_differential_mode = 0x00,
-    .is_high_resolution = 0x7f,
+    {
+        .channel              = ADC_BIT(ADC_CH3P_P20) | ADC_BIT(ADC_CH2P_P14) | ADC_BIT(ADC_CH3N_P15),
+        .is_continue_mode     = FALSE,
+        .is_differential_mode = 0x00,
+        .is_high_resolution   = 0x7f,
 };
 
+static void adc_ProcessOSALMsg(osal_event_hdr_t *pMsg);
+static void adcMeasureTask(void);
 
-
-
-/*********************************************************************
-    LOCAL FUNCTIONS
-*/
-static void adc_ProcessOSALMsg( osal_event_hdr_t* pMsg );
-static void adcMeasureTask( void );
-
-/*********************************************************************
-    PROFILE CALLBACKS
-*/
-
-/*********************************************************************
-    PUBLIC FUNCTIONS
-*/
-
-void adc_Init( uint8 task_id )
+void adc_Init(uint8 task_id)
 {
-    adcDemo_TaskID = task_id;
+  adcDemo_TaskID = task_id;
+  adcMeasureTask();
+}
+
+uint16 adc_ProcessEvent(uint8 task_id, uint16 events)
+{
+  VOID task_id;
+
+  if (events & adcMeasureTask_EVT)
+  {
     adcMeasureTask();
+    return (events ^ adcMeasureTask_EVT);
+  }
+
+  return 0;
 }
 
-uint16 adc_ProcessEvent( uint8 task_id, uint16 events )
+static void adc_evt(adc_Evt_t *pev)
 {
-    VOID task_id; // OSAL required parameter that isn't used in this function
-    //LOG("adc_ProcessEvent: 0x%x\n",events);
+  float   value                = 0;
+  int     i                    = 0;
+  bool    is_high_resolution   = FALSE;
+  bool    is_differential_mode = FALSE;
+  uint8_t ch                   = 0;
 
-    if ( events & SYS_EVENT_MSG )
+  if ((pev->type != HAL_ADC_EVT_DATA) || (pev->ch < 2))
+    return;
+
+  osal_memcpy(adc_debug[pev->ch - 2], pev->data, 2 * (pev->size));
+  channel_done_flag |= BIT(pev->ch);
+
+  if (channel_done_flag == adc_cfg.channel)
+  {
+    for (i = 2; i < 8; i++)
     {
-        uint8* pMsg;
+      if (channel_done_flag & BIT(i))
+      {
+        is_high_resolution = (adc_cfg.is_high_resolution & BIT(i)) ? TRUE : FALSE;
+        is_differential_mode = (adc_cfg.is_differential_mode & BIT(i)) ? TRUE : FALSE;
+        value = hal_adc_value_cal((adc_CH_t)i, adc_debug[i - 2], pev->size, is_high_resolution, is_differential_mode);
 
-        if ( (pMsg = osal_msg_receive( adcDemo_TaskID )) != NULL )
+        switch (i)
         {
-            adc_ProcessOSALMsg( (osal_event_hdr_t*)pMsg );
-            // Release the OSAL message
-            VOID osal_msg_deallocate( pMsg );
+        case ADC_CH1N_P11:
+          ch = 11;
+          break;
+
+        case ADC_CH1P_P23:
+          ch = 23;
+          break;
+
+        case ADC_CH2N_P24:
+          ch = 24;
+          break;
+
+        case ADC_CH2P_P14:
+          ch = 14;
+          break;
+
+        case ADC_CH3N_P15:
+          ch = 15;
+          break;
+
+        case ADC_CH3P_P20:
+          ch = 20;
+          break;
+
+        default:
+          break;
         }
 
-        // return unprocessed events
-        return (events ^ SYS_EVENT_MSG);
-    }
+#define BATT_VOLTAGE_MAX      (900)
+#define BATT_VOLTAGE_MIN      (600)
+uint8_t batt_voltage;
 
-    if ( events & 0x20 )
-    {
-        // Perform periodic heart rate task
-        //LOG("20\n");
-        //osal_start_timerEx( adcDemo_TaskID, 0x20, 2000);
-        return (events ^ 0x20);
-    }
-
-    if ( events & adcMeasureTask_EVT )
-    {
-        // Perform periodic heart rate task
-        //LOG("adcMeasureTask_EVT\n");
-        adcMeasureTask();
-        return (events ^ adcMeasureTask_EVT);
-    }
-
-    // Discard unknown events
-    return 0;
-}
-
-static void adc_ProcessOSALMsg( osal_event_hdr_t* pMsg )
-{
-}
-
-static void adc_evt(adc_Evt_t* pev)
-{
-    float value = 0;
-    int i = 0;
-    bool is_high_resolution = FALSE;
-    bool is_differential_mode = FALSE;
-    uint8_t ch = 0;
-
-    if((pev->type != HAL_ADC_EVT_DATA) || (pev->ch < 2))
-        return;
-
-    osal_memcpy(adc_debug[pev->ch-2],pev->data,2*(pev->size));
-    channel_done_flag |= BIT(pev->ch);
-
-    if(channel_done_flag == adc_cfg.channel)
-    {
-        for(i=2; i<8; i++)
+        if (ch == 14)
         {
-            if(channel_done_flag & BIT(i))
-            {
-                is_high_resolution = (adc_cfg.is_high_resolution & BIT(i))?TRUE:FALSE;
-                is_differential_mode = (adc_cfg.is_differential_mode & BIT(i))?TRUE:FALSE;
-                value = hal_adc_value_cal((adc_CH_t)i,adc_debug[i-2], pev->size, is_high_resolution,is_differential_mode);
+          battery_level = (int)(value * 1000);
 
-                switch(i)
-                {
-                case ADC_CH1N_P11:
-                    ch=11;
-                    break;
+          if (BATT_VOLTAGE_MAX <= batt_voltage)
+            battery_level = 100;
+          else if (BATT_VOLTAGE_MIN >= batt_voltage)
+            battery_level = 0;
+          else
+            battery_level = ((batt_voltage - BATT_VOLTAGE_MIN) / (BATT_VOLTAGE_MAX - BATT_VOLTAGE_MIN)) * 100;
 
-                case ADC_CH1P_P23:
-                    ch=23;
-                    break;
-
-                case ADC_CH2N_P24:
-                    ch=24;
-                    break;
-
-                case ADC_CH2P_P14:
-                    ch=14;
-                    break;
-
-                case ADC_CH3N_P15:
-                    ch=15;
-                    break;
-
-                case ADC_CH3P_P20:
-                    ch=20;
-                    break;
-
-                default:
-                    break;
-                }
-
-                if(ch!=0)
-                {
-                    LOG("P%d %d mv ",ch,(int)(value*1000));
-                }
-                else
-                {
-                    LOG("invalid channel\n");
-                }
-            }
+          Batt_MeasLevel();
+          LOG("Send batt BLE\n");
         }
 
-        LOG(" mode:%d \n",adc_cfg.is_continue_mode);
-        channel_done_flag = 0;
 
-        if(adc_cfg.is_continue_mode == FALSE)
+        if (ch != 0)
         {
-            osal_start_timerEx(adcDemo_TaskID, adcMeasureTask_EVT,1000);
+          LOG("P%d %d mv ", ch, (int)(value * 1000));
         }
+        else
+        {
+          LOG("invalid channel\n");
+        }
+      }
     }
+
+    LOG(" mode:%d \n", adc_cfg.is_continue_mode);
+    channel_done_flag = 0;
+
+    if (adc_cfg.is_continue_mode == FALSE)
+    {
+      osal_start_timerEx(adcDemo_TaskID, adcMeasureTask_EVT, 5000);
+    }
+  }
 }
 
-static void adcMeasureTask( void )
+static void adcMeasureTask(void)
 {
-    int ret;
-    bool batt_mode = TRUE;
-    uint8_t batt_ch = ADC_CH3P_P20;
-    GPIO_Pin_e pin;
+  int ret;
+  bool batt_mode = TRUE;
+  uint8_t batt_ch = ADC_CH3P_P20;
+  GPIO_Pin_e pin;
 
-    //LOG("adcMeasureTask\n");
-    if(FALSE == batt_mode)
-    {
-        ret = hal_adc_config_channel(adc_cfg, adc_evt);
-    }
-    else
-    {
-        if((((1 << batt_ch) & adc_cfg.channel) == 0) || (adc_cfg.is_differential_mode != 0x00))
-            return;
+  if (FALSE == batt_mode)
+  {
+    ret = hal_adc_config_channel(adc_cfg, adc_evt);
+  }
+  else
+  {
+    if ((((1 << batt_ch) & adc_cfg.channel) == 0) || (adc_cfg.is_differential_mode != 0x00))
+      return;
 
-        pin = s_pinmap[batt_ch];
-        hal_gpio_cfg_analog_io(pin,Bit_DISABLE);
-        hal_gpio_write(pin, 1);
-        ret = hal_adc_config_channel(adc_cfg, adc_evt);
-        hal_gpio_cfg_analog_io(pin,Bit_DISABLE);
-    }
+    pin = s_pinmap[batt_ch];
+    hal_gpio_cfg_analog_io(pin, Bit_DISABLE);
+    hal_gpio_write(pin, 1);
+    ret = hal_adc_config_channel(adc_cfg, adc_evt);
+    hal_gpio_cfg_analog_io(pin, Bit_DISABLE);
+  }
 
-    if(ret)
-    {
-        LOG("ret = %d\n",ret);
-        return;
-    }
+  if (ret)
+  {
+    LOG("ret = %d\n", ret);
+    return;
+  }
 
-    hal_adc_start();
+  hal_adc_start();
 }
-

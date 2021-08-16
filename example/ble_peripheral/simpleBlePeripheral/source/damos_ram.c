@@ -25,4 +25,6 @@ device_t g_dispenser =
   .device_case        = 1,
 };
 
+uint8_t battery_level = 0;
+
 /* End of file -------------------------------------------------------- */

@@ -20,6 +20,7 @@
 #include "hiddev.h"
 
 #include "battservice.h"
+#include "damos_ram.h"
 
 /*********************************************************************
     MACROS
@@ -336,7 +337,7 @@ bStatus_t Batt_MeasLevel( void )
     level = battMeasure();
 
     // If level has gone down
-    if (level < battLevel)
+    // if (level < battLevel)
     {
         // Update level
         battLevel = level;
@@ -383,7 +384,7 @@ static uint8 battReadAttrCB( uint16 connHandle, gattAttribute_t* pAttr,
         level = battMeasure();
 
         // If level has gone down
-        if (level < battLevel)
+        // if (level < battLevel)
         {
             // Update level
             battLevel = level;
@@ -490,7 +491,7 @@ static void battNotifyCB( linkDBItem_t* pLinkItem )
 static uint8 battMeasure( void )
 {
     uint8 percent;
-    percent = 95;
+    percent = battery_level;
     return percent;
 }
 
