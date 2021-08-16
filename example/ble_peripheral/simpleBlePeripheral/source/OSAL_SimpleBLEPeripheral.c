@@ -50,6 +50,7 @@
 #include "simpleBLEPeripheral.h"
 #include "gapbondmgr.h"
 #include "ble_timer.h"
+#include "bsp_adc.h"
 /*********************************************************************
     GLOBAL VARIABLES
 */
@@ -72,7 +73,8 @@ const pTaskEventHandlerFn tasksArr[] =
     #endif
     GATTServApp_ProcessEvent,                                         // task 7
     ble_timer_process_event,                            // task 8
-    bleuart_ProcessEvent                                 // task 9
+    bleuart_ProcessEvent,                                 // task 9
+    adc_ProcessEvent
 };
 
 const uint8 tasksCnt = sizeof( tasksArr ) / sizeof( tasksArr[0] );
@@ -123,7 +125,8 @@ void osalInitTasks( void )
   /* Application */
   ble_timer_init(taskID++);
 
-  bleuart_Init( taskID);
+  bleuart_Init(taskID++);
+  adc_Init(taskID);
 }
 #endif
 /*********************************************************************
