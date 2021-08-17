@@ -98,8 +98,10 @@ static void adc_evt(adc_Evt_t *pev)
     {
       if (channel_done_flag & BIT(i))
       {
-        is_high_resolution = (adc_cfg.is_high_resolution & BIT(i)) ? TRUE : FALSE;
-        is_differential_mode = (adc_cfg.is_differential_mode & BIT(i)) ? TRUE : FALSE;
+        // is_high_resolution = (adc_cfg.is_high_resolution & BIT(i)) ? TRUE : FALSE;
+        is_high_resolution = FALSE;
+        // is_differential_mode = (adc_cfg.is_differential_mode & BIT(i)) ? TRUE : FALSE;
+        is_differential_mode = FALSE;
         value = hal_adc_value_cal((adc_CH_t)i, adc_debug[i - 2], pev->size, is_high_resolution, is_differential_mode);
 
         switch (i)
@@ -132,7 +134,7 @@ static void adc_evt(adc_Evt_t *pev)
           break;
         }
 
-#define BATT_VOLTAGE_MAX      (900)
+#define BATT_VOLTAGE_MAX      (1000)
 #define BATT_VOLTAGE_MIN      (600)
 uint16_t batt_voltage;
 
@@ -155,6 +157,7 @@ uint16_t batt_voltage;
 
         if (ch != 0)
         {
+          // LOG("P%d %d mv\n", ch, (int)(value * 1000));
         }
         else
         {
@@ -162,6 +165,7 @@ uint16_t batt_voltage;
         }
       }
     }
+
 
     // LOG(" mode:%d \n", adc_cfg.is_continue_mode);
     channel_done_flag = 0;
@@ -189,11 +193,11 @@ static void adcMeasureTask(void)
     if ((((1 << batt_ch) & adc_cfg.channel) == 0) || (adc_cfg.is_differential_mode != 0x00))
       return;
 
-    pin = s_pinmap[batt_ch];
-    hal_gpio_cfg_analog_io(pin, Bit_DISABLE);
-    hal_gpio_write(pin, 1);
+    // pin = s_pinmap[batt_ch];
+    // hal_gpio_cfg_analog_io(pin, Bit_DISABLE);
+    // hal_gpio_write(pin, 1);
     ret = hal_adc_config_channel(adc_cfg, adc_evt);
-    hal_gpio_cfg_analog_io(pin, Bit_DISABLE);
+    // hal_gpio_cfg_analog_io(pin, Bit_DISABLE);
   }
 
   if (ret)
