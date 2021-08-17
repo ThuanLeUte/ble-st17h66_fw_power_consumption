@@ -15,6 +15,7 @@
 #include "flash.h"
 #include "version.h"
 #include "fs.h"
+#include "adc.h"
 #define DEFAULT_UART_BAUD 115200
 
 /*********************************************************************
@@ -147,7 +148,7 @@ static void ble_mem_init_config(void)
 static void hal_rfphy_init(void)
 {
   //============config the txPower
-  g_rfPhyTxPower = RF_PHY_TX_POWER_5DBM;
+  g_rfPhyTxPower = RF_PHY_TX_POWER_3DBM;
   //============config BLE_PHY TYPE
   g_rfPhyPktFmt = PKT_FMT_BLE1M;
   //============config RF Frequency Offset

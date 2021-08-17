@@ -134,27 +134,27 @@ static void adc_evt(adc_Evt_t *pev)
 
 #define BATT_VOLTAGE_MAX      (900)
 #define BATT_VOLTAGE_MIN      (600)
-uint8_t batt_voltage;
+uint16_t batt_voltage;
 
         if (ch == 14)
         {
-          battery_level = (int)(value * 1000);
+          batt_voltage = (int)(value * 1000);
 
           if (BATT_VOLTAGE_MAX <= batt_voltage)
             battery_level = 100;
           else if (BATT_VOLTAGE_MIN >= batt_voltage)
             battery_level = 0;
           else
-            battery_level = ((batt_voltage - BATT_VOLTAGE_MIN) / (BATT_VOLTAGE_MAX - BATT_VOLTAGE_MIN)) * 100;
+            battery_level = (float)((float)(batt_voltage - BATT_VOLTAGE_MIN) / (float)(BATT_VOLTAGE_MAX - BATT_VOLTAGE_MIN)) * 100;
 
-          Batt_MeasLevel();
+          LOG("P%d %d mv\n", ch, (int)(value * 1000));
+          LOG("Battery Level: %d\n", battery_level);
           LOG("Send batt BLE\n");
+          Batt_MeasLevel();
         }
-
 
         if (ch != 0)
         {
-          LOG("P%d %d mv ", ch, (int)(value * 1000));
         }
         else
         {
@@ -163,7 +163,7 @@ uint8_t batt_voltage;
       }
     }
 
-    LOG(" mode:%d \n", adc_cfg.is_continue_mode);
+    // LOG(" mode:%d \n", adc_cfg.is_continue_mode);
     channel_done_flag = 0;
 
     if (adc_cfg.is_continue_mode == FALSE)

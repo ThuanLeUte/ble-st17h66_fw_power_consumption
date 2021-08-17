@@ -28,7 +28,7 @@ static uint16_t m_btn_time         = 0;
 
 /* Function prototypes ------------------------------------------------ */
 static void m_sys_switch_to_case(sys_device_case_t _case, bool reset);
-static void m_sys_led_blink(uint8_t blink, uint8_t time);
+static void m_sys_led_blink(uint8_t blink, uint8_t time, uint16_t delay);
 
 /* Function definitions ----------------------------------------------- */
 void sys_init(void)
@@ -157,7 +157,7 @@ void ble_timer_button_handler(void)
       LOG("Bottle available \n");
       g_dispenser.bottle_replacement = 1;
 
-      m_sys_led_blink(2, 6);
+      m_sys_led_blink(2, 6, 2000);
       m_sys_switch_to_case(SYS_DEV_CASE_3, true);
     }
   }
@@ -198,7 +198,7 @@ void ble_timer_hall_handler(void)
     g_dispenser.bottle_replacement = 0;
     g_dispenser.click_count        = 0;
 
-    m_sys_led_blink(3, 2);
+    m_sys_led_blink(3, 2, 200);
     m_sys_switch_to_case(SYS_DEV_CASE_2, true);
   }
 }
@@ -223,7 +223,7 @@ void ble_timer_case2_expired_handler(void)
 
 void ble_timer_case2_led_indicate_handler(void)
 {
-  m_sys_led_blink(2, 1);
+  m_sys_led_blink(2, 1, 200);
 }
 
 void sys_on_ble_mcs_service_evt(mcs_evt_t *pev)
@@ -309,7 +309,7 @@ static void m_sys_switch_to_case(sys_device_case_t _case, bool reset)
   }
 }
 
-static void m_sys_led_blink(uint8_t blink, uint8_t time)
+static void m_sys_led_blink(uint8_t blink, uint8_t time, uint16_t delay)
 {
   for (uint8_t j = 0; j < time; j++)
   {
@@ -320,7 +320,7 @@ static void m_sys_led_blink(uint8_t blink, uint8_t time)
       hal_gpio_write(LED_INDICATE, 0);
       WaitMs(50);
     }
-    WaitMs(200);
+    WaitMs(delay);
   }
 }
 
