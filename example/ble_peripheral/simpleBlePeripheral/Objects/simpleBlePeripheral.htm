@@ -3,7 +3,7 @@
 <title>Static Call Graph - [.\Objects\simpleBlePeripheral.axf]</title></head>
 <body><HR>
 <H1>Static Call Graph for image .\Objects\simpleBlePeripheral.axf</H1><HR>
-<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5060750: Last Updated: Tue Aug 17 09:33:47 2021
+<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5060750: Last Updated: Wed Aug 18 00:37:00 2021
 <BR><P>
 <H3>Maximum Stack Usage =        540 bytes + Unknown(Untraceable Function Pointers)</H3><H3>
 Call chain for Maximum Stack Depth:</H3>
@@ -336,7 +336,6 @@ Global Symbols
 <LI><a href="#[1a4]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;GAPRole_SetParameter (via Veneer)
 <LI><a href="#[199]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;GAPRole_GetParameter (via Veneer)
 <LI><a href="#[0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;bleuart_StateNotificationCB (via Veneer)
-<LI><a href="#[e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;adc_evt (via Veneer)
 <LI><a href="#[1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;gapPeriProcessHCICmdCompleteEvt (via Veneer)
 <LI><a href="#[16f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;rf_tp_cal (via Veneer)
 <LI><a href="#[16a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;rf_rxDcoc_cfg (via Veneer)
@@ -680,7 +679,6 @@ Global Symbols
 <LI><a href="#[2e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;dss_read_attr_cb (via Veneer)
 <LI><a href="#[175]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;ble_set_device_name (via Veneer)
 <LI><a href="#[165]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;bleuart_Init (via Veneer)
-<LI><a href="#[e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;adc_evt (via Veneer)
 <LI><a href="#[9b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;DevInfo_SetParameter (via Veneer)
 <LI><a href="#[21]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;devInfo_ReadAttrCB (via Veneer)
 <LI><a href="#[1f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;battReadAttrCB (via Veneer)
@@ -5020,7 +5018,7 @@ Local Symbols
 </UL>
 <BR>[Address Reference Count : 1]<UL><LI> devinfoservice.o(.constdata)
 </UL>
-<P><STRONG><a name="[d2]"></a>adcMeasureTask</STRONG> (Thumb, 86 bytes, Stack size 16 bytes, bsp_adc.o(i.adcMeasureTask))
+<P><STRONG><a name="[d2]"></a>adcMeasureTask</STRONG> (Thumb, 70 bytes, Stack size 16 bytes, bsp_adc.o(i.adcMeasureTask))
 <BR><BR>[Stack]<UL><LI>Max Depth = 224<LI>Call Chain = adcMeasureTask &rArr; dbg_printf &rArr; log_vsprintf &rArr; number
 </UL>
 <BR>[Calls]<UL><LI><a href="#[d4]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;hal_gpio_write
@@ -5034,8 +5032,8 @@ Local Symbols
 <LI><a href="#[d9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;adc_Init
 </UL>
 
-<P><STRONG><a name="[e]"></a>adc_evt</STRONG> (Thumb, 318 bytes, Stack size 24 bytes, bsp_adc.o(i.adc_evt))
-<BR><BR>[Stack]<UL><LI>Max Depth = 272<LI>Call Chain = adc_evt &rArr; hal_adc_value_cal &rArr; dbg_printf &rArr; log_vsprintf &rArr; number
+<P><STRONG><a name="[e]"></a>adc_evt</STRONG> (Thumb, 180 bytes, Stack size 32 bytes, bsp_adc.o(i.adc_evt))
+<BR><BR>[Stack]<UL><LI>Max Depth = 280<LI>Call Chain = adc_evt &rArr; hal_adc_value_cal &rArr; dbg_printf &rArr; log_vsprintf &rArr; number
 </UL>
 <BR>[Calls]<UL><LI><a href="#[d7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;dbg_printf (via Veneer)
 <LI><a href="#[88]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_i2f
@@ -5043,11 +5041,9 @@ Local Symbols
 <LI><a href="#[83]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_fdiv
 <LI><a href="#[da]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;hal_adc_value_cal
 <LI><a href="#[bf]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;osal_start_timerEx (via Veneer)
-<LI><a href="#[9c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;osal_memcpy (via Veneer)
 <LI><a href="#[dd]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_f2uiz
 <LI><a href="#[dc]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_f2iz
 <LI><a href="#[98]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Batt_MeasLevel
-<LI><a href="#[bb]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__ARM_common_switch8 (via Veneer)
 </UL>
 <BR>[Address Reference Count : 1]<UL><LI> bsp_adc.o(i.adcMeasureTask)
 </UL>

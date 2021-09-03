@@ -28,21 +28,32 @@ Project File Date:  08/16/2021
 *** Using Compiler 'V5.06 update 6 (build 750)', folder: 'C:\Keil_v5\ARM\ARMCC\Bin'
 Build target 'Target 1'
 compiling bsp_adc.c...
+source\bsp_adc.c(34): warning:  #177-D: variable "channel_done_flag"  was declared but never referenced
+  static uint8_t channel_done_flag = 0;
 source\bsp_adc.c(59): warning:  #177-D: function "adc_ProcessOSALMsg"  was declared but never referenced
   static void adc_ProcessOSALMsg(osal_event_hdr_t *pMsg);
-source\bsp_adc.c: 1 warning, 0 errors
+source\bsp_adc.c: 2 warnings, 0 errors
+compiling bsp.c...
+source\bsp.c(122): warning:  #188-D: enumerated type mixed with another type
+      m_batt_value = hal_adc_value_cal(1, pev->data, pev->size, TRUE, FALSE);
+source\bsp.c(57): warning:  #177-D: function "bsp_battery_init"  was declared but never referenced
+  static int bsp_battery_init(void)
+source\bsp.c: 2 warnings, 0 errors
+compiling main.c...
+compiling adc.c...
+compiling OSAL_SimpleBLEPeripheral.c...
 linking...
 .\scatter_load.sct(15): warning: L6329W: Pattern rf_phy_driver.o(i.rf_phy_dtm*) only matches removed unused sections.
 .\scatter_load.sct(16): warning: L6329W: Pattern rf_phy_driver.o(i.rf_phy_direct_*) only matches removed unused sections.
 .\scatter_load.sct(40): warning: L6329W: Pattern sbpProfile_ota.o(RO) only matches removed unused sections.
 .\scatter_load.sct(41): warning: L6329W: Pattern pwm.o(RO) only matches removed unused sections.
 .\scatter_load.sct(42): warning: L6329W: Pattern ota_app_service.o(RO) only matches removed unused sections.
-Program Size: Code=51904 RO-data=2064 RW-data=2576 ZI-data=10988  
+Program Size: Code=51736 RO-data=2064 RW-data=2576 ZI-data=10220  
 Finished: 0 information, 5 warning and 0 error messages.
 FromELF: creating hex file...
 After Build - User command #1: fromelf.exe .\Objects\simpleBlePeripheral.axf --i32combined --output .\bin\simpleBlePeripheral.hex
 After Build - User command #2: fromelf -c -a -d -e -v -o simpleBlePeripheral.asm ./Objects/simpleBlePeripheral.axf
-".\Objects\simpleBlePeripheral.axf" - 0 Error(s), 6 Warning(s).
+".\Objects\simpleBlePeripheral.axf" - 0 Error(s), 9 Warning(s).
 
 <h2>Software Packages used:</h2>
 
@@ -63,10 +74,10 @@ Package Vendor: ARM
    * Component: ARM::CMSIS:CORE:5.5.0
 
    * Component: ARM::Device:Startup:1.2.2
+      Source file:   Device\ARM\ARMCM0\Source\ARM\startup_ARMCM0.s
       Include file:  Device\ARM\ARMCM0\Include\ARMCM0.h
       Source file:   Device\ARM\ARMCM0\Source\system_ARMCM0.c
-      Source file:   Device\ARM\ARMCM0\Source\ARM\startup_ARMCM0.s
-Build Time Elapsed:  00:00:02
+Build Time Elapsed:  00:00:05
 </pre>
 </body>
 </html>
