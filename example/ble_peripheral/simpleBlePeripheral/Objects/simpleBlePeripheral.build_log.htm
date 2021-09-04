@@ -22,51 +22,38 @@ Dialog DLL:      TARMCM1.DLL V1.14.2.0
  
 <h2>Project:</h2>
 D:\02_Mega\06_Projects\10_BLE_Beacons\03_Software\02_Firmware\ble-st17h66_fw_power_consumption\example\ble_peripheral\simpleBlePeripheral\simpleBlePeripheral.uvprojx
-Project File Date:  07/21/2021
+Project File Date:  09/04/2021
 
 <h2>Output:</h2>
 *** Using Compiler 'V5.06 update 6 (build 750)', folder: 'C:\Keil_v5\ARM\ARMCC\Bin'
 Build target 'Target 1'
-compiling sys.c...
-source\sys.c(67): warning:  #223-D: function "strlen" declared implicitly
-    ble_set_device_name(g_dispenser.device_name, strlen((const char *)g_dispenser.device_name));
-source\sys.c: 1 warning, 0 errors
-linking...
-.\scatter_load.sct(15): warning: L6329W: Pattern rf_phy_driver.o(i.rf_phy_dtm*) only matches removed unused sections.
-.\scatter_load.sct(16): warning: L6329W: Pattern rf_phy_driver.o(i.rf_phy_direct_*) only matches removed unused sections.
-.\scatter_load.sct(40): warning: L6329W: Pattern sbpProfile_ota.o(RO) only matches removed unused sections.
-.\scatter_load.sct(41): warning: L6329W: Pattern pwm.o(RO) only matches removed unused sections.
-.\scatter_load.sct(42): warning: L6329W: Pattern ota_app_service.o(RO) only matches removed unused sections.
-Program Size: Code=47956 RO-data=2024 RW-data=2564 ZI-data=10224  
-Finished: 0 information, 5 warning and 0 error messages.
-FromELF: creating hex file...
 After Build - User command #1: fromelf.exe .\Objects\simpleBlePeripheral.axf --i32combined --output .\bin\simpleBlePeripheral.hex
 After Build - User command #2: fromelf -c -a -d -e -v -o simpleBlePeripheral.asm ./Objects/simpleBlePeripheral.axf
-".\Objects\simpleBlePeripheral.axf" - 0 Error(s), 6 Warning(s).
+".\Objects\simpleBlePeripheral.axf" - 0 Error(s), 0 Warning(s).
 
 <h2>Software Packages used:</h2>
 
 Package Vendor: ARM
-                http://www.keil.com/pack/ARM.CMSIS.5.7.0.pack
-                ARM.CMSIS.5.7.0
-                CMSIS (Cortex Microcontroller Software Interface Standard)
-   * Component: CORE Version: 5.4.0
+                http://www.keil.com/pack/ARM.CMSIS.5.8.0.pack
+                ARM.CMSIS.5.8.0
+                CMSIS (Common Microcontroller Software Interface Standard)
+   * Component: CORE Version: 5.5.0
    * Component: Startup Version: 1.2.2
 
 <h2>Collection of Component include folders:</h2>
   .\RTE\_Target_1
-  C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.7.0\CMSIS\Core\Include
-  C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.7.0\Device\ARM\ARMCM0\Include
+  C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.8.0\CMSIS\Core\Include
+  C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.8.0\Device\ARM\ARMCM0\Include
 
 <h2>Collection of Component Files used:</h2>
 
-   * Component: ARM::CMSIS:CORE:5.4.0
+   * Component: ARM::CMSIS:CORE:5.5.0
 
    * Component: ARM::Device:Startup:1.2.2
       Include file:  Device\ARM\ARMCM0\Include\ARMCM0.h
-      Source file:   Device\ARM\ARMCM0\Source\system_ARMCM0.c
       Source file:   Device\ARM\ARMCM0\Source\ARM\startup_ARMCM0.s
-Build Time Elapsed:  00:00:03
+      Source file:   Device\ARM\ARMCM0\Source\system_ARMCM0.c
+Build Time Elapsed:  00:00:01
 </pre>
 </body>
 </html>
