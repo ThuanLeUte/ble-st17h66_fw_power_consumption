@@ -31,7 +31,7 @@
 #define TIMER_DISPENSER_DETETED_TIME     (6 * 60 * 60 * 1000)  // 6 Hours
 #define TIMER_CASE2_EXPIRED_TIME         (3 * 60 * 1000)       // 3 Minutes
 #define TIMER_CASE2_LED_INDICATE_TIME    (5 * 1000)            // 5 Seconds
-#define TIMER_WAKEUP_TIME                (200)                 // 0.1 Seconds
+#define TIMER_WAKEUP_TIME                (250)                 // 0.1 Seconds
 
 /* Public Callbacks -------------------------------------------------- */
 /**
