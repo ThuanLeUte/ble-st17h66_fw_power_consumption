@@ -50,6 +50,10 @@ void ble_timer_start(uint16_t event_id)
   case TIMER_CASE2_LED_INDICATE_EVT:
     osal_start_reload_timer(m_task_id, event_id, TIMER_CASE2_LED_INDICATE_TIME);
     break;
+
+  case TIMER_WAKEUP_EVT:
+    osal_start_reload_timer(m_task_id, event_id, TIMER_WAKEUP_TIME);
+    break;
   
   default:
     break;
@@ -92,6 +96,11 @@ uint16_t ble_timer_process_event(uint8_t task_id, uint16_t events)
   {
     ble_timer_case2_led_indicate_handler();
     return (events ^ TIMER_CASE2_LED_INDICATE_EVT);
+  }
+  else if (events & TIMER_WAKEUP_EVT)
+  {
+    ble_timer_wakeup_handler();
+    return (events ^ TIMER_WAKEUP_EVT);
   }
 
   return 0;

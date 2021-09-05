@@ -11,6 +11,7 @@
 
 /* Includes ----------------------------------------------------------- */
 #include <stdio.h>
+#include <string.h>
 #include "sys.h"
 #include "ble_misc_services.h"
 #include "ble_dvs_services.h"
@@ -83,6 +84,8 @@ void sys_init(void)
   default:
     break;
   }
+
+  ble_timer_start(TIMER_WAKEUP_EVT);
 }
 
 void sys_ble_disconnected_state(void)
@@ -171,7 +174,7 @@ void ble_timer_hall_handler(void)
 
     if (hal_gpio_read(HALL_SENSOR_LOGIC) == 1)
     {
-      // m_sys_led_blink(1, 1);
+      m_sys_led_blink(1, 1, 0);
 
       ble_timer_stop(TIMER_HALL_HANDLER_EVT);
       ble_timer_start(TIMER_EXPIRED_CLICK_EVT);
@@ -224,6 +227,10 @@ void ble_timer_case2_expired_handler(void)
 void ble_timer_case2_led_indicate_handler(void)
 {
   m_sys_led_blink(2, 1, 200);
+}
+
+void ble_timer_wakeup_handler(void)
+{
 }
 
 void sys_on_ble_mcs_service_evt(mcs_evt_t *pev)
