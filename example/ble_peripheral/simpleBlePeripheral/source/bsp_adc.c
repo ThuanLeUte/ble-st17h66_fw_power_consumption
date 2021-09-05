@@ -27,7 +27,7 @@
 static uint8 adc_demo_task_id;
 
 static adc_Cfg_t adc_cfg = {
-    .channel              = ADC_BIT(ADC_CH2P_P14) | ADC_BIT(ADC_CH3N_P15) | ADC_BIT(ADC_CH3P_P20),
+    .channel              = ADC_BIT(ADC_CH2P_P14) | ADC_BIT(ADC_CH3N_P15),
     .is_continue_mode     = FALSE,
     .is_differential_mode = 0x00,
     .is_high_resolution   = 0x7f,
@@ -78,14 +78,12 @@ static void m_bsp_adc_evt(adc_Evt_t *pev)
     else
       battery_level = (float)((float)(batt_voltage - BATT_VOLTAGE_MIN) / (float)(BATT_VOLTAGE_MAX - BATT_VOLTAGE_MIN)) * 100;
 
-    LOG("P%d %d mv\n", 14, (int)(value * 1000));
-    LOG("Battery Level: %d\n", battery_level);
-    LOG("Send batt BLE\n");
+    LOG("P%d %d mV, Battery Level: %d\n", 14, (int)(value * 1000), battery_level);
     Batt_MeasLevel();
   }
 
   if (adc_cfg.is_continue_mode == FALSE)
-    osal_start_timerEx(adc_demo_task_id, ADC_MEASURE_TASK_EVT, 1000);
+    osal_start_timerEx(adc_demo_task_id, ADC_MEASURE_TASK_EVT, 60 * 1000);
 }
 
 static void m_bsp_adc_measure_task(void)
