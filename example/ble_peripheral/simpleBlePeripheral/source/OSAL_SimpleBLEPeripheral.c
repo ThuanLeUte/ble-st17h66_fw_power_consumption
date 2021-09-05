@@ -74,7 +74,7 @@ const pTaskEventHandlerFn tasksArr[] =
     GATTServApp_ProcessEvent,                                         // task 7
     ble_timer_process_event,                            // task 8
     bleuart_ProcessEvent,                                 // task 9
-    adc_ProcessEvent
+    bsp_adc_process_event
 };
 
 const uint8 tasksCnt = sizeof( tasksArr ) / sizeof( tasksArr[0] );
@@ -126,7 +126,7 @@ void osalInitTasks( void )
   ble_timer_init(taskID++);
 
   bleuart_Init(taskID++);
-  adc_Init(taskID);
+  bsp_adc_init(taskID);
 }
 #endif
 /*********************************************************************

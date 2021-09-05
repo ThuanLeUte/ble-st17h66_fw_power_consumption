@@ -1,5 +1,7 @@
 {
     "files.associations": {
-        "osal_pwrmgr.h": "c"
+        "osal_pwrmgr.h": "c",
+        "xutility": "c",
+        "clock.h": "c"
     }
 }

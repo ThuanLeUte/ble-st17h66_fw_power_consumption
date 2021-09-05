@@ -1,18 +1,15 @@
-/**************************************************************************************************
-*******
-**************************************************************************************************/
+/**
+ * @file       bsp_acd.h
+ * @copyright  Copyright (C) 2020 Thuan Le. All rights reserved.
+ * @license    This project is released under the Thuan Le License.
+ * @version    1.0.0
+ * @date       2021-04-21
+ * @author     Thuan Le
+ * @brief      Board Support Package ADC
+ * @note       None
+ */
 
-/**************************************************************************************************
-    Filename:       adc_demo.c
-    Revised:        $Date $
-    Revision:       $Revision $
-
-
-**************************************************************************************************/
-
-/*********************************************************************
-    INCLUDES
-*/
+/* Includes ---------------------------------------------------------- */
 #include "OSAL.h"
 #include "gpio.h"
 #include "clock.h"
@@ -22,77 +19,54 @@
 #include "damos_ram.h"
 #include "battservice.h"
 
-/*********************************************************************
-    TYPEDEFS
-*/
+/* Private defines ---------------------------------------------------- */
+#define BATT_VOLTAGE_MAX (800)
+#define BATT_VOLTAGE_MIN (640)
 
-/*********************************************************************
-    GLOBAL VARIABLES
-*/
-#define MAX_SAMPLE_POINT 64
-uint16_t adc_debug[6][MAX_SAMPLE_POINT];
-static uint8_t channel_done_flag = 0;
+/* Private variable --------------------------------------------------- */
+static uint8 adc_demo_task_id;
 
-static uint8 adcDemo_TaskID; // Task ID for internal task/event processing
-/*
-    channel:
-    is_differential_mode:
-    is_high_resolution:
-    [bit7~bit2]=[p20,p15~p11],ignore[bit1,bit0]
-    when measure adc(not battery),we'd better use high_resolution.
-    when measure battery,we'd better use no high_resolution and keep the gpio alone.
-
-    differential_mode is rarely used,
-    if use please config channel as one of [ADC_CH3DIFF,ADC_CH2DIFF,ADC_CH1DIFF],
-    and is_high_resolution as one of [0x80,0x20,0x08],
-    then the pair of [P20~P15,P14~P13,P12~P11] will work.
-    other adc channel cannot work.
-*/
-adc_Cfg_t adc_cfg =
-    {
-        .channel = ADC_BIT(ADC_CH2P_P14) | ADC_BIT(ADC_CH3N_P15) | ADC_BIT(ADC_CH3P_P20),
-        .is_continue_mode = FALSE,
-        .is_differential_mode = 0x00,
-        .is_high_resolution = 0x7f,
+static adc_Cfg_t adc_cfg = {
+    .channel              = ADC_BIT(ADC_CH2P_P14) | ADC_BIT(ADC_CH3N_P15) | ADC_BIT(ADC_CH3P_P20),
+    .is_continue_mode     = FALSE,
+    .is_differential_mode = 0x00,
+    .is_high_resolution   = 0x7f,
 };
 
-static void adc_ProcessOSALMsg(osal_event_hdr_t *pMsg);
-static void adcMeasureTask(void);
+/* Private function prototypes ---------------------------------------- */
+static void m_bsp_adc_measure_task(void);
+static void m_bsp_adc_evt(adc_Evt_t *pev);
 
-void adc_Init(uint8 task_id)
+/* Function definitions ----------------------------------------------- */
+void bsp_adc_init(uint8 task_id)
 {
-  adcDemo_TaskID = task_id;
-  adcMeasureTask();
+  adc_demo_task_id = task_id;
+  m_bsp_adc_measure_task();
 }
 
-uint16 adc_ProcessEvent(uint8 task_id, uint16 events)
+uint16 bsp_adc_process_event(uint8 task_id, uint16 events)
 {
   VOID task_id;
 
-  if (events & adcMeasureTask_EVT)
+  if (events & ADC_MEASURE_TASK_EVT)
   {
-    adcMeasureTask();
-    return (events ^ adcMeasureTask_EVT);
+    m_bsp_adc_measure_task();
+    return (events ^ ADC_MEASURE_TASK_EVT);
   }
 
   return 0;
 }
-
-static void adc_evt(adc_Evt_t *pev)
+/* Private Function definitions ----------------------------------------------- */
+static void m_bsp_adc_evt(adc_Evt_t *pev)
 {
   float   value                = 0;
-  bool    is_high_resolution   = FALSE;
+  bool    is_high_resolution   = TRUE;
   bool    is_differential_mode = FALSE;
-
-  is_high_resolution = FALSE;
-  is_differential_mode = FALSE;
 
   if (pev->ch == ADC_CH2P_P14)
   {
     value = hal_adc_value_cal((adc_CH_t)pev->ch, pev->data, pev->size, is_high_resolution, is_differential_mode);
 
-#define BATT_VOLTAGE_MAX (1000)
-#define BATT_VOLTAGE_MIN (600)
     uint16_t batt_voltage;
 
     batt_voltage = (int)(value * 1000);
@@ -110,38 +84,12 @@ static void adc_evt(adc_Evt_t *pev)
     Batt_MeasLevel();
   }
 
-  value = hal_adc_value_cal((adc_CH_t)pev->ch, pev->data, pev->size, is_high_resolution, is_differential_mode);
-  LOG("P%d %d mv ", pev->ch, (int)(value * 1000));
-
   if (adc_cfg.is_continue_mode == FALSE)
-    osal_start_timerEx(adcDemo_TaskID, adcMeasureTask_EVT, 5000);
+    osal_start_timerEx(adc_demo_task_id, ADC_MEASURE_TASK_EVT, 1000);
 }
 
-static void adcMeasureTask(void)
+static void m_bsp_adc_measure_task(void)
 {
-  int ret;
-  bool batt_mode = TRUE;
-  uint8_t batt_ch = ADC_CH2P_P14;
-  GPIO_Pin_e pin;
-
-  if (FALSE == batt_mode)
-  {
-    ret = hal_adc_config_channel(adc_cfg, adc_evt);
-  }
-  else
-  {
-    pin = s_pinmap[batt_ch];
-    hal_gpio_cfg_analog_io(pin, Bit_DISABLE);
-    hal_gpio_write(pin, 1);
-    ret = hal_adc_config_channel(adc_cfg, adc_evt);
-    hal_gpio_cfg_analog_io(pin, Bit_ENABLE);
-  }
-
-  if (ret)
-  {
-    LOG("ret = %d\n", ret);
-    return;
-  }
-
+  hal_adc_config_channel(adc_cfg, m_bsp_adc_evt);
   hal_adc_start();
 }

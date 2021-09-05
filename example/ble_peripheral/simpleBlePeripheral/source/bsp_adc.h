@@ -30,14 +30,14 @@ extern "C"
 /*********************************************************************
     MACROS
 */
-#define adcMeasureTask_EVT                            0x0080
+#define ADC_MEASURE_TASK_EVT                            0x0080
 
 /*********************************************************************
     FUNCTIONS
 */
 
-extern void adc_Init( uint8 task_id );
-extern uint16 adc_ProcessEvent( uint8 task_id, uint16 events );
+extern void bsp_adc_init( uint8 task_id );
+extern uint16 bsp_adc_process_event( uint8 task_id, uint16 events );
 
 /*********************************************************************
 *********************************************************************/
